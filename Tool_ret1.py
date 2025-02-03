@@ -31,7 +31,6 @@ column_mapping = {
 }
 data = data.rename(columns=column_mapping)
 
-
 # Define country-to-continent mapping
 continent_mapping = {
     'United States': 'America', 'Canada': 'America', 'Mexico': 'America', 'Brazil': 'America',
@@ -63,10 +62,23 @@ continent_mapping = {
 # Ensure all expected columns exist
 data['Col_2025'] = data.get('Col_2025', np.nan)
 
-# Compute Retirement Suitability Score
-data['Available_Variables'] = data[list(column_mapping.values())].notna().sum(axis=1)
-data['Retirement Suitability'] = data[list(column_mapping.values())].mean(axis=1, skipna=True)
-data['Has_Incomplete_Data'] = data['Available_Variables'] < len(column_mapping)
+# Categorize each variable into percentiles (quintiles)
+def categorize_percentiles(df, variables):
+    for var in variables:
+        if var in df.columns:
+            if var == "Pollution":
+                df[f"{var}_Category"] = pd.qcut(
+                    df[var].rank(method='min', ascending=False, na_option='bottom'),
+                    5, labels=[5, 4, 3, 2, 1] 
+                )
+            else:
+                df[f"{var}_Category"] = pd.qcut(
+                    df[var].rank(method='first', ascending=True, na_option='bottom'),
+                    5, labels=[5, 4, 3, 2, 1]
+                )
+    return df
+
+data = categorize_percentiles(data, list(column_mapping.values()))
 
 # Sidebar Filters
 st.sidebar.subheader("Select Variables for Retirement Suitability")
@@ -80,16 +92,16 @@ for label in variables:
         selected_vars.append(label)
 
 if selected_vars:
-    existing_columns = ['Country', 'Col_2025', 'Continent', 'Retirement Suitability', 'Has_Incomplete_Data']
-    valid_selected_vars = [var for var in selected_vars if var in data.columns]
-    df_selected = data[existing_columns + valid_selected_vars].copy()
-    df_selected[valid_selected_vars] = df_selected[valid_selected_vars].astype(str).replace('nan', 'NA')
+    df_selected = data[['Country', 'Col_2025', 'Continent'] + selected_vars + [f"{var}_Category" for var in selected_vars]].copy()
+    df_selected.dropna(subset=selected_vars, inplace=True)
     
     # Apply filters based on slider values
-    for var in valid_selected_vars:
+    for var in selected_vars:
         max_category = sliders[var]
-        df_selected = df_selected[df_selected[var].astype(str) <= str(max_category)]
+        df_selected = df_selected[df_selected[f"{var}_Category"].astype(int) <= max_category]
     
+    df_selected['Retirement Suitability'] = df_selected[selected_vars].mean(axis=1)
+
     # Scatter Plot
     fig_scatter = px.scatter(
         df_selected, 
@@ -104,18 +116,18 @@ if selected_vars:
         },
         template="plotly_dark", 
         category_orders={"Continent": ["America", "Europe", "Asia", "Africa", "Oceania"]},
-        hover_data={var: True for var in valid_selected_vars},
+        hover_data={var: True for var in selected_vars},
         size_max=15
     )
 
     # Add red circles around countries with incomplete data
     for i, row in df_selected.iterrows():
-        if row['Has_Incomplete_Data']:
+        if row.isna().any():
             fig_scatter.add_trace(go.Scatter(
                 x=[row['Retirement Suitability']],
                 y=[row['Col_2025']],
                 mode='markers',
-                marker=dict(symbol='circle-open', color='red', size=18, line=dict(width=2)),
+                marker=dict(symbol='circle-open', color='red', size=17, line=dict(width=2)),
                 name='Incomplete Data',
                 showlegend=False
             ))
@@ -124,14 +136,13 @@ if selected_vars:
     fig_scatter.add_trace(go.Scatter(
         x=[None], y=[None],
         mode='markers',
-        marker=dict(symbol='circle-open', color='red', size=18, line=dict(width=2)),
-        name='Incomplete Data'
+        marker=dict(symbol='circle-open', color='red', size=17, line=dict(width=2)),
+        name='Incomplete Data',
+        legendgroup='incomplete'
     ))
 
     fig_scatter.update_layout(
         title=dict(text="Retirement Suitability vs Cost of Living", font=dict(color='white', size=24), x=0.5, xanchor="center"),
-        xaxis=dict(linecolor='white', tickfont=dict(color='white'), showgrid=True, gridcolor='rgba(255, 255, 255, 0.3)', gridwidth=1),
-        yaxis=dict(linecolor='white', tickfont=dict(color='white'), showgrid=True, gridcolor='rgba(255, 255, 255, 0.3)', gridwidth=1),
         legend=dict(font=dict(color="white")),
         paper_bgcolor='black', plot_bgcolor='black'
     )
@@ -140,7 +151,7 @@ if selected_vars:
 
     # Map Visualization
     st.write("### Understand the spatial distribution of the variables that make up the Retirement Suitability")
-    selected_map_var = st.selectbox("", valid_selected_vars)
+    selected_map_var = st.selectbox("", selected_vars)
     
     fig_map = px.choropleth(df_selected, locations="Country", locationmode="country names", color=selected_map_var, color_continuous_scale="RdYlGn")
     
