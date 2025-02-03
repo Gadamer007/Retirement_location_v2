@@ -130,8 +130,6 @@ if selected_vars:
     df_selected['Valid_Var_Count'] = df_selected[selected_vars].count(axis=1)
     df_selected['Retirement Suitability'] = df_selected[selected_vars].sum(axis=1) / df_selected['Valid_Var_Count']
 
-    # Mark countries that have missing data
-    df_selected["Has_Missing_Data"] = df_selected["Valid_Var_Count"] < len(selected_vars)
 
 
     df_selected['Retirement Suitability'] = df_selected[selected_vars].mean(axis=1)
@@ -152,68 +150,51 @@ if selected_vars:
     df_selected = df_selected.fillna("NA")  
 
 
-    # Ensure df_selected is not empty before plotting
-    # Debugging: Print DataFrame info before plotting
-    st.write("### Debugging Info:")
-    st.write("df_selected shape:", df_selected.shape)
-    st.write("df_selected columns:", df_selected.columns.tolist())
-    st.write("df_selected preview:", df_selected.head())
-
-    # Ensure df_selected is not empty before plotting
-    if not df_selected.empty and "Retirement Suitability" in df_selected.columns and "Col_2025" in df_selected.columns:
-        fig_scatter = px.scatter(
-            df_selected[~df_selected["Has_Missing_Data"]],  # Exclude incomplete data by default
-            x="Retirement Suitability", 
-            y="Col_2025", 
-            text="Country", 
-            color=df_selected['Continent'],
-            title="Retirement Suitability vs Cost of Living", 
-            labels={
-                "Col_2025": "Cost of Living (0 - 100)", 
-                "Retirement Suitability": "Retirement Suitability (0 - 100)",
-                "Pollution_Hover": "Pollution"
-            },
-            template="plotly_dark", 
-            category_orders={"Continent": ["America", "Europe", "Asia", "Africa", "Oceania"]},
-            hover_data=hover_data_adjusted
-        )
-
-        st.plotly_chart(fig_scatter, use_container_width=True)
-
-    else:
-        st.warning("No data available to plot. Adjust filters to display countries.")
-
-
-
+    fig_scatter = px.scatter(
+        df_selected, 
+        x="Retirement Suitability", 
+        y="Col_2025", 
+        text="Country", 
+        color=df_selected['Continent'],
+        title="Retirement Suitability vs Cost of Living", 
+        labels={
+            "Col_2025": "Cost of Living (0 - 100)", 
+            "Retirement Suitability": "Retirement Suitability (0 - 100)",
+            "Pollution_Hover": "Pollution"
+        },
+        template="plotly_dark", 
+        category_orders={"Continent": ["America", "Europe", "Asia", "Africa", "Oceania"]},
+        hover_data=hover_data_adjusted
+    )
 
 # Add red border circles for missing data points
     # Ensure red circles follow continent filtering
-    incomplete_data = df_selected[df_selected["Has_Missing_Data"]]
-
+    incomplete_data = df_selected[
+        (df_selected['Valid_Var_Count'] < len(selected_vars)) &
+        (df_selected['Continent'].isin(df_selected['Continent'].unique()))
+    ]
 
     # Add red border circles for countries with missing data
     if not incomplete_data.empty:
         highlight_trace = px.scatter(
-            incomplete_data,  # Use incomplete data only
+            incomplete_data,
             x="Retirement Suitability",
             y="Col_2025",
             text="Country",
-            color_discrete_sequence=["red"],  # Force red color
             hover_data=hover_data_adjusted
         ).data[0]
 
         # Modify marker properties for empty red circles
-        highlight_trace.marker.symbol = "circle-open"  # Empty red circle
+        highlight_trace.marker.symbol = "circle-open"  # Ensures the empty red circle
         highlight_trace.marker.size = 15
         highlight_trace.marker.line.width = 2
-        highlight_trace.name = "Incomplete Data"  # Custom name in legend
+        highlight_trace.marker.color = "red"
+        highlight_trace.name = "Incomplete Data"  # Custom name in legend instead of "NA"
 
         fig_scatter.add_trace(highlight_trace)
 
-
         # Ensure "Incomplete Data" appears as a clickable legend entry
-        fig_scatter.update_traces(selector=dict(name="Incomplete Data"), visible="legendonly")
-
+        fig_scatter.update_traces(selector=dict(name="Incomplete Data"), showlegend=True)
 
 
 
