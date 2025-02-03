@@ -33,7 +33,7 @@ column_mapping = {
 data = data.rename(columns=column_mapping)
 
 # Define country-to-continent mapping
-continent_mapping = {
+continent_mapping = { 
     'United States': 'America', 'Canada': 'America', 'Mexico': 'America', 'Brazil': 'America',
     'Argentina': 'America', 'Chile': 'America', 'Colombia': 'America', 'Peru': 'America', 'Uruguay': 'America',
     'Costa Rica': 'America', 'Panama': 'America', 'Trinidad And Tobago': 'America', 'Puerto Rico': 'America',
@@ -67,40 +67,18 @@ def categorize_percentiles(df, variables):
     for var in variables:
         if var in df.columns:
             if var == "Pollution":
-                # Invert Pollution so lower values are better
                 df[f"{var}_Category"] = pd.qcut(
                     df[var].rank(method='min', ascending=False, na_option='bottom'),
-                    5, labels=[5, 4, 3, 2, 1]  # 1 = Cleanest, 5 = Most Polluted
+                    5, labels=[5, 4, 3, 2, 1]
                 )
             else:
                 df[f"{var}_Category"] = pd.qcut(
                     df[var].rank(method='first', ascending=True, na_option='bottom'),
-                    5, labels=[5, 4, 3, 2, 1]  # 1 = Best, 5 = Worst
+                    5, labels=[5, 4, 3, 2, 1]
                 )
     return df
 
 data = categorize_percentiles(data, list(column_mapping.values()))
-
-# Title for the Tool
-st.title("Best Countries for Early Retirement: Where to Retire Abroad?")
-
-# Instructions Section
-st.write("### Instructions for Using the Tool")
-instructions = """
-- This tool helps users identify the **best countries for retirement** abroad.  
-- Use the **left panel** to **select variables** that matter to you (e.g., uncheck Pollution if it’s not a factor).  
-- **Adjust sliders** to filter out low-performing countries for a given variable (e.g., setting Safety from 5 to 4 removes the least safe countries).  
-- The tool calculates a **Retirement Suitability Score** as the average of the selected factors.  
-- The **figure plots this score** against **cost of living (COL)** to highlight potential destinations.  
-- Use the **zoom tool** (top-right of the figure) to explore specific countries.  
-- Click on **legend continents** to hide/unhide regions.  
-- **Example**: Setting strict criteria for Safety (2), Healthcare (2), Political Stability (4), Pollution (3), and Climate (3) results in 6 qualifying countries. Spain, Portugal, and Japan emerge as good candidates with a relatively low COL.  
-- The **map below** shows how the Retirement Suitability factors are distributed geographically.  
-- **Data is from Numbeo (2025)**, except for Political Stability, which is based on the **World Bank's Governance Indicators (2023)**.  
-- The tool does not account for **Capital Gains Tax (CGT)**, but users should consider it (**[see here](https://taxsummaries.pwc.com/quick-charts/capital-gains-tax-cgt-rates)**).  
-"""
-st.write(instructions)
-
 
 # Sidebar Filters
 st.sidebar.subheader("Select Variables for Retirement Suitability")
@@ -114,136 +92,49 @@ for label in variables:
         selected_vars.append(label)
 
 if selected_vars:
-    # Start with full dataset
     df_filtered = data.copy()
 
-    # Apply slider filters **before creating df_selected**
     for var in selected_vars:
         max_category = sliders[var]  
         category_col = f"{var}_Category"
-    
         if category_col in df_filtered.columns:
             df_filtered = df_filtered[df_filtered[category_col].astype(float) <= max_category]  
 
-    # Now create df_selected from the already filtered data
     df_selected = df_filtered[['Country', 'Col_2025', 'Continent'] + selected_vars].copy()
     df_selected['Valid_Var_Count'] = df_selected[selected_vars].count(axis=1)
-    df_selected['Retirement Suitability'] = df_selected[selected_vars].sum(axis=1) / df_selected['Valid_Var_Count']
-
-
-
     df_selected['Retirement Suitability'] = df_selected[selected_vars].mean(axis=1)
 
-    # Scatter Plot
-    # Ensure we do not modify the original DataFrame
-    df_selected = df_selected.copy()
-
-    # If Pollution is in selected variables, create the inverse for hover display
-    if "Pollution" in selected_vars:
-        df_selected["Pollution_Hover"] = 100 - df_selected["Pollution"]  # Invert Pollution values
-
-    # Update hover data mapping
-    hover_data_adjusted = {var: ':.2f' for var in selected_vars}
-    hover_data_adjusted["Valid_Var_Count"] = True  # Show count of available variables
-
-    # Ensure missing values are displayed as "NA"
-    df_selected = df_selected.fillna("NA")  
-
-    # Identify incomplete data points 
-    incomplete_data = df_selected[df_selected['Valid_Var_Count'] < len(selected_vars)]
-    
-    # Add a new column for shape categorization (Circle = Complete, X = Incomplete)
-    # Identify incomplete data points (must be defined before applying lambda)
     incomplete_data = df_selected[df_selected['Valid_Var_Count'] < len(selected_vars)]
 
-    # Create a new column to differentiate between complete and incomplete data
     df_selected["Data_Completion"] = df_selected["Country"].apply(
         lambda x: "Incomplete Data" if x in incomplete_data["Country"].values else "Complete Data"
     )
 
-
-    fig_scatter.update_traces(se
+    fig_scatter = px.scatter(
         df_selected, 
         x="Retirement Suitability", 
         y="Col_2025", 
         text="Country", 
-        color="Continent",  # Separate color legend for continents
-        symbol="Data_Completion",  # Separate symbol legend for completeness
-        symbol_map={"Complete Data": "circle", "Incomplete Data": "x"},  # Define shapes
-        title="Retirement Suitability vs Cost of Living", 
-        labels={
-            "Col_2025": "Cost of Living (0 - 100)", 
-            "Retirement Suitability": "Retirement Suitability (0 - 100)",
-            "Pollution_Hover": "Pollution",
-            "Continent": "Continent",  # Legend Title for Continents
-            "Data_Completion": "Data Availability"  # Legend Title for Data Completeness
-        },
-        template="plotly_dark", 
-        category_orders={"Continent": ["America", "Europe", "Asia", "Africa", "Oceania"]},
-        hover_data=hover_data_adjusted
+        color="Continent",
+        symbol="Data_Completion",
+        symbol_map={"Complete Data": "circle", "Incomplete Data": "x"},
+        title="Retirement Suitability vs Cost of Living",
+        labels={"Col_2025": "Cost of Living (0 - 100)", "Retirement Suitability": "Retirement Suitability (0 - 100)"},
+        template="plotly_dark",
+        hover_data=selected_vars
     )
 
+    fig_scatter.update_traces(marker=dict(size=12), textposition="top center")
 
-    # Increase bubble size
-    fig_scatter.update_traces(marker=dict(size=10), textposition="top center")  # Moves label above bubble
+    fig_scatter.update_layout(
+        title=dict(text="Retirement Suitability vs Cost of Living", font=dict(color='white', size=24), x=0.5, xanchor="center"),
+        legend_title_text="Legend",
+        legend_traceorder="grouped",
+        paper_bgcolor='black', plot_bgcolor='black'
+    )
 
+    st.plotly_chart(fig_scatter, use_container_width=True)
 
-
-# Now create the scatter plot
-# Add a new column for shape categorization (Circle = Complete, X = Incomplete)
-df_selected["Data_Completion"] = df_selected["Country"].apply(
-    lambda x: "Complete Data" if x not in incomplete_data["Country"].values else "Incomplete Data"
-)
-
-fig_scatter = px.scatter(
-    df_selected, 
-    x="Retirement Suitability", 
-    y="Col_2025", 
-    text="Country", 
-    color="Continent",  # Separate color legend for continents
-    symbol="Data_Completion",  # Separate symbol legend for completeness
-    symbol_map={"Complete Data": "circle", "Incomplete Data": "x"},  # Define shapes
-    title="Retirement Suitability vs Cost of Living", 
-    labels={
-        "Col_2025": "Cost of Living (0 - 100)", 
-        "Retirement Suitability": "Retirement Suitability (0 - 100)",
-        "Pollution_Hover": "Pollution",
-        "Continent": "Continent",  # Legend Title for Continents
-        "Data_Completion": "Data Availability"  # Legend Title for Data Completeness
-    },
-    template="plotly_dark", 
-    category_orders={"Continent": ["America", "Europe", "Asia", "Africa", "Oceania"]},
-    hover_data=hover_data_adjusted
-)
-
-# Increase bubble size
-fig_scatter.update_traces(marker=dict(size=10), textposition="top center")  # Moves label above bubble
-
-
-# Update layout for better visibility
-fig_scatter.update_layout(
-    title=dict(text="Retirement Suitability vs Cost of Living", font=dict(color='white', size=24), x=0.5, xanchor="center"),
-    xaxis=dict(linecolor='white', tickfont=dict(color='white'), showgrid=True, gridcolor='rgba(255, 255, 255, 0.3)', gridwidth=1),
-    yaxis=dict(linecolor='white', tickfont=dict(color='white'), showgrid=True, gridcolor='rgba(255, 255, 255, 0.3)', gridwidth=1),
-    legend=dict(font=dict(color="white")),
-    paper_bgcolor='black', plot_bgcolor='black'
-)
-
-# Increase bubble size for visibility and move country labels above the bubbles
-fig_scatter.update_traces(marker=dict(size=12), textposition="top center")  # Enlarged bubbles
-
-# Ensure the layout separates legends
-fig_scatter.update_layout(
-    title=dict(text="Retirement Suitability vs Cost of Living", font=dict(color='white', size=24), x=0.5, xanchor="center"),
-    xaxis=dict(linecolor='white', tickfont=dict(color='white'), showgrid=True, gridcolor='rgba(255, 255, 255, 0.3)', gridwidth=1),
-    yaxis=dict(linecolor='white', tickfont=dict(color='white'), showgrid=True, gridcolor='rgba(255, 255, 255, 0.3)', gridwidth=1),
-    legend_title_text="Legend",  # Add a title to the legend
-    legend_traceorder="grouped",  # Group legend items
-    paper_bgcolor='black', plot_bgcolor='black'
-)
-
-# Display the final plot
-st.plotly_chart(fig_scatter, use_container_width=True)
 
 
 
