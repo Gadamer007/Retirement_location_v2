@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
+import plotly.graph_objects as go
 import numpy as np
 import requests
 from io import BytesIO
@@ -10,11 +11,9 @@ from io import BytesIO
 def load_data():
     url = "https://raw.githubusercontent.com/Gadamer007/Retirement_location/main/Ret_data.xlsx"  # GitHub raw URL
     
-    # Download the file content from GitHub
     response = requests.get(url)
-    response.raise_for_status()  # Ensure we stop on bad responses (e.g., 404)
+    response.raise_for_status()
 
-    # Load the Excel file into Pandas from the downloaded content
     df = pd.read_excel(BytesIO(response.content), sheet_name="Country")
     return df
 
@@ -60,13 +59,9 @@ continent_mapping = {
 }
 
 
-# Assign continent
-data['Continent'] = data['Country'].map(continent_mapping)
-
-# Compute Retirement Suitability Score for each country
+# Compute Retirement Suitability Score
 data['Available_Variables'] = data[list(column_mapping.values())].notna().sum(axis=1)
 data['Retirement Suitability'] = data[list(column_mapping.values())].mean(axis=1, skipna=True)
-
 data['Has_Incomplete_Data'] = data['Available_Variables'] < len(column_mapping)
 
 # Sidebar Filters
@@ -105,22 +100,14 @@ if selected_vars:
     # Add red circles around countries with incomplete data
     for i, row in df_selected.iterrows():
         if row['Has_Incomplete_Data']:
-            fig_scatter.add_trace(px.scatter(
+            fig_scatter.add_trace(go.Scatter(
                 x=[row['Retirement Suitability']],
                 y=[row['Col_2025']],
                 mode='markers',
-                marker=dict(symbol='circle-open', color='red', size=15),
-                showlegend=False
-            ).data[0])
-
-    # Add a second legend for incomplete data
-    fig_scatter.add_trace(px.scatter(
-        x=[None],
-        y=[None],
-        mode='markers',
-        marker=dict(symbol='circle-open', color='red', size=15),
-        name='Incomplete Data'
-    ).data[0])
+                marker=dict(symbol='circle-open', color='red', size=15, line=dict(width=2)),
+                name='Incomplete Data',
+                showlegend=True if i == 0 else False
+            ))
 
     fig_scatter.update_layout(
         title=dict(text="Retirement Suitability vs Cost of Living", font=dict(color='white', size=24), x=0.5, xanchor="center"),
