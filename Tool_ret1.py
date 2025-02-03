@@ -1,6 +1,6 @@
 import streamlit as st
 import pandas as pd
-import plotly.express as px
+import plotly.graph_objects as go
 import numpy as np
 import requests
 from io import BytesIO
@@ -79,44 +79,45 @@ if selected_vars:
         lambda x: "Incomplete Data" if x in incomplete_data["Country"].values else "Complete Data"
     )
 
-    # First scatter plot for CONTINENT COLORS (Hide Shape Legend)
-    fig_scatter = px.scatter(
-        df_selected, 
-        x="Retirement Suitability", 
-        y="Col_2025", 
-        text="Country", 
-        color="Continent",
+    # Create figure object
+    fig = go.Figure()
+
+    # 🌍 First trace (Color Legend - Continents)
+    for continent in df_selected["Continent"].unique():
+        subset = df_selected[df_selected["Continent"] == continent]
+        fig.add_trace(go.Scatter(
+            x=subset["Retirement Suitability"],
+            y=subset["Col_2025"],
+            mode="markers",
+            marker=dict(size=12),
+            name=continent,
+            legendgroup="Continent",  # Group all continents together
+        ))
+
+    # ✅ Second trace (Shape Legend - Data Completeness)
+    for completeness in df_selected["Data_Completion"].unique():
+        subset = df_selected[df_selected["Data_Completion"] == completeness]
+        fig.add_trace(go.Scatter(
+            x=subset["Retirement Suitability"],
+            y=subset["Col_2025"],
+            mode="markers",
+            marker=dict(size=12, symbol="circle" if completeness == "Complete Data" else "x"),
+            name=completeness,
+            legendgroup="Data Availability",  # Separate legend
+        ))
+
+    # Update layout for **two separate legends**
+    fig.update_layout(
         title="Retirement Suitability vs Cost of Living",
-        labels={"Col_2025": "Cost of Living (0 - 100)", "Retirement Suitability": "Retirement Suitability (0 - 100)"},
-        template="plotly_dark",
-        hover_data=selected_vars
+        xaxis_title="Retirement Suitability (0 - 100)",
+        yaxis_title="Cost of Living (0 - 100)",
+        legend=dict(traceorder="grouped"),
+        paper_bgcolor='black', 
+        plot_bgcolor='black'
     )
 
-    # Second scatter plot for DATA COMPLETENESS (Hide Color Legend)
-    fig_data = px.scatter(
-        df_selected, 
-        x="Retirement Suitability", 
-        y="Col_2025", 
-        symbol="Data_Completion",
-        color="Continent",
-        symbol_map={"Complete Data": "circle", "Incomplete Data": "x"},
-        template="plotly_dark"
-    )
-
-    for trace in fig_data.data:
-        trace.showlegend = True  # Show only for symbols
-        fig_scatter.add_trace(trace)
-
-    # Adjust layout to separate legends
-    fig_scatter.update_layout(
-        title=dict(text="Retirement Suitability vs Cost of Living", font=dict(color='white', size=24), x=0.5, xanchor="center"),
-        legend_title_text="Continent",  # First legend title
-        legend_traceorder="grouped",
-        paper_bgcolor='black', plot_bgcolor='black'
-    )
-
-    # Display the final plot
-    st.plotly_chart(fig_scatter, use_container_width=True)
+    # Show the chart
+    st.plotly_chart(fig, use_container_width=True)
 
 
 
