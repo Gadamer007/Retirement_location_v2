@@ -161,7 +161,12 @@ if selected_vars:
     )
 
 # Add red border circles for missing data points
-    incomplete_data = df_selected[(df_selected['Valid_Var_Count'] < len(selected_vars)) & (df_selected['Continent'].isin(df_selected['Continent'].unique()))]
+    # Ensure red circles follow continent filtering
+    incomplete_data = df_selected[
+        (df_selected['Valid_Var_Count'] < len(selected_vars)) &
+        (df_selected['Continent'].isin(df_selected['Continent'].unique()))
+    ]
+
     # Add red border circles for countries with missing data
     if not incomplete_data.empty:
         highlight_trace = px.scatter(
@@ -172,14 +177,17 @@ if selected_vars:
             hover_data=hover_data_adjusted
         ).data[0]
 
-        # Modify marker properties
-        highlight_trace.marker.symbol = "circle-open"  # Empty red circle
+        # Modify marker properties for empty red circles
+        highlight_trace.marker.symbol = "circle-open"  # Ensures the empty red circle
         highlight_trace.marker.size = 15
         highlight_trace.marker.line.width = 2
         highlight_trace.marker.color = "red"
-        highlight_trace.name = "Incomplete Data"  # Custom name instead of "NA" appearing in the legend
+        highlight_trace.name = "Incomplete Data"  # Custom name in legend instead of "NA"
 
         fig_scatter.add_trace(highlight_trace)
+
+        # Ensure "Incomplete Data" appears as a clickable legend entry
+        fig_scatter.update_traces(selector=dict(name="Incomplete Data"), showlegend=True)
 
 
 
