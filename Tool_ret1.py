@@ -121,7 +121,9 @@ if selected_vars:
 
     for var in selected_vars:
         max_category = sliders[var]  
-        df_selected = df_selected[df_selected[f"{var}_Category"].astype(int) <= max_category]
+        if f"{var}_Category" in df_selected.columns:
+            df_selected = df_selected[df_selected[f"{var}_Category"].astype(int) <= max_category]
+
 
     df_selected['Retirement Suitability'] = df_selected[selected_vars].mean(axis=1)
 
