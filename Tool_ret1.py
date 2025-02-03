@@ -167,7 +167,7 @@ if selected_vars:
         hover_data=hover_data_adjusted
     )
     # Increase bubble size
-    fig_scatter.update_traces(marker=dict(size=12), textposition="top center")  # Moves label above bubble
+    fig_scatter.update_traces(marker=dict(size=10), textposition="top center")  # Moves label above bubble
 
 
 # Identify incomplete data points
@@ -193,7 +193,7 @@ fig_scatter = px.scatter(
     hover_data=hover_data_adjusted
 )
 # Increase bubble size
-fig_scatter.update_traces(marker=dict(size=12), textposition="top center")  # Moves label above bubble
+fig_scatter.update_traces(marker=dict(size=10), textposition="top center")  # Moves label above bubble
 
 
 # Add red border circles for incomplete data as a separate trace
@@ -208,7 +208,7 @@ if not incomplete_data.empty:
 
     # Modify marker properties for empty red circles
     highlight_trace.marker.symbol = "circle-open"
-    highlight_trace.marker.size = 12
+    highlight_trace.marker.size = 10
     highlight_trace.marker.line.width = 2
     highlight_trace.marker.color = "red"
     highlight_trace.name = "Incomplete Data"
