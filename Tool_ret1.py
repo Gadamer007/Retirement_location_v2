@@ -160,14 +160,22 @@ if selected_vars:
 
 # Add red border circles for missing data points
     incomplete_data = df_selected[df_selected['Valid_Var_Count'] < len(selected_vars)]
-    fig_scatter.add_trace(px.scatter(
-        incomplete_data,
-        x="Retirement Suitability",
-        y="Col_2025",
-        text="Country",
-        mode="markers",
-        marker=dict(symbol="circle-open", size=15, color="red", line=dict(width=2)),
-    ).data[0])
+    # Add red border circles for countries with missing data
+    if not incomplete_data.empty:
+        highlight_trace = px.scatter(
+            incomplete_data,
+            x="Retirement Suitability",
+            y="Col_2025",
+            text="Country",
+            color_discrete_sequence=["red"]
+        ).data[0]
+
+        highlight_trace.marker.symbol = "circle-open"
+        highlight_trace.marker.size = 15
+        highlight_trace.marker.line.width = 2
+
+        fig_scatter.add_trace(highlight_trace)
+
 
 
     fig_scatter.update_traces(marker=dict(size=10), textposition='top center')
