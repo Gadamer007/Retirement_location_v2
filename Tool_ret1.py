@@ -1,6 +1,6 @@
 import streamlit as st
 import pandas as pd
-import plotly.graph_objects as go
+import plotly.express as px
 import numpy as np
 import requests
 from io import BytesIO
@@ -8,9 +8,13 @@ from io import BytesIO
 # Load dataset
 @st.cache_data
 def load_data():
-    url = "https://raw.githubusercontent.com/Gadamer007/Retirement_location/main/Ret_data.xlsx"  
+    url = "https://raw.githubusercontent.com/Gadamer007/Retirement_location/main/Ret_data.xlsx"  # GitHub raw URL
+    
+    # Download the file content from GitHub
     response = requests.get(url)
-    response.raise_for_status()
+    response.raise_for_status()  # Ensure we stop on bad responses (e.g., 404)
+
+    # Load the Excel file into Pandas from the downloaded content
     df = pd.read_excel(BytesIO(response.content), sheet_name="Country")
     return df
 
@@ -29,7 +33,7 @@ column_mapping = {
 data = data.rename(columns=column_mapping)
 
 # Define country-to-continent mapping
-continent_mapping = { 
+continent_mapping = {
     'United States': 'America', 'Canada': 'America', 'Mexico': 'America', 'Brazil': 'America',
     'Argentina': 'America', 'Chile': 'America', 'Colombia': 'America', 'Peru': 'America', 'Uruguay': 'America',
     'Costa Rica': 'America', 'Panama': 'America', 'Trinidad And Tobago': 'America', 'Puerto Rico': 'America',
@@ -58,70 +62,161 @@ continent_mapping = {
 # Assign continent
 data['Continent'] = data['Country'].map(continent_mapping)
 
+# Categorize each variable into percentiles (quintiles)
+def categorize_percentiles(df, variables):
+    for var in variables:
+        if var in df.columns:
+            if var == "Pollution":
+                # Invert Pollution so lower values are better
+                df[f"{var}_Category"] = pd.qcut(
+                    df[var].rank(method='min', ascending=False, na_option='bottom'),
+                    5, labels=[5, 4, 3, 2, 1]  # 1 = Cleanest, 5 = Most Polluted
+                )
+            else:
+                df[f"{var}_Category"] = pd.qcut(
+                    df[var].rank(method='first', ascending=True, na_option='bottom'),
+                    5, labels=[5, 4, 3, 2, 1]  # 1 = Best, 5 = Worst
+                )
+    return df
+
+data = categorize_percentiles(data, list(column_mapping.values()))
+
+# Title for the Tool
+st.title("Best Countries for Early Retirement: Where to Retire Abroad?")
+
+# Instructions Section
+st.write("### Instructions for Using the Tool")
+instructions = """
+- This tool helps users identify the **best countries for retirement** abroad.  
+- Use the **left panel** to **select variables** that matter to you (e.g., uncheck Pollution if it’s not a factor).  
+- **Adjust sliders** to filter out low-performing countries for a given variable (e.g., setting Safety from 5 to 4 removes the least safe countries).  
+- The tool calculates a **Retirement Suitability Score** as the average of the selected factors.  
+- The **figure plots this score** against **cost of living (COL)** to highlight potential destinations.  
+- Use the **zoom tool** (top-right of the figure) to explore specific countries.  
+- Click on **legend continents** to hide/unhide regions.  
+- **Example**: Setting strict criteria for Safety (2), Healthcare (2), Political Stability (4), Pollution (3), and Climate (3) results in 6 qualifying countries. Spain, Portugal, and Japan emerge as good candidates with a relatively low COL.  
+- The **map below** shows how the Retirement Suitability factors are distributed geographically.  
+- **Data is from Numbeo (2025)**, except for Political Stability, which is based on the **World Bank's Governance Indicators (2023)**.  
+- The tool does not account for **Capital Gains Tax (CGT)**, but users should consider it (**[see here](https://taxsummaries.pwc.com/quick-charts/capital-gains-tax-cgt-rates)**).  
+"""
+st.write(instructions)
+
+
 # Sidebar Filters
 st.sidebar.subheader("Select Variables for Retirement Suitability")
 selected_vars = []
+sliders = {}
 variables = list(column_mapping.values())
 
 for label in variables:
     if st.sidebar.checkbox(label, value=True):
+        sliders[label] = st.sidebar.slider(f"{label}", 1, 5, 5, format=None)
         selected_vars.append(label)
 
 if selected_vars:
+    # Start with full dataset
     df_filtered = data.copy()
+
+    # Apply slider filters **before creating df_selected**
+    for var in selected_vars:
+        max_category = sliders[var]  
+        category_col = f"{var}_Category"
+    
+        if category_col in df_filtered.columns:
+            df_filtered = df_filtered[df_filtered[category_col].astype(float) <= max_category]  
+
+    # Now create df_selected from the already filtered data
     df_selected = df_filtered[['Country', 'Col_2025', 'Continent'] + selected_vars].copy()
     df_selected['Valid_Var_Count'] = df_selected[selected_vars].count(axis=1)
+    df_selected['Retirement Suitability'] = df_selected[selected_vars].sum(axis=1) / df_selected['Valid_Var_Count']
+
+
+
     df_selected['Retirement Suitability'] = df_selected[selected_vars].mean(axis=1)
 
-    incomplete_data = df_selected[df_selected['Valid_Var_Count'] < len(selected_vars)]
+    # Scatter Plot
+    # Ensure we do not modify the original DataFrame
+    df_selected = df_selected.copy()
+
+    # If Pollution is in selected variables, create the inverse for hover display
+    if "Pollution" in selected_vars:
+        df_selected["Pollution_Hover"] = 100 - df_selected["Pollution"]  # Invert Pollution values
+
+    # Update hover data mapping
+    hover_data_adjusted = {var: ':.2f' for var in selected_vars}
+    hover_data_adjusted["Valid_Var_Count"] = True  # Show count of available variables
+
+    # Ensure missing values are displayed as "NA"
+    df_selected = df_selected.fillna("NA")  
+
+
+    fig_scatter = px.scatter(
+        df_selected, 
+        x="Retirement Suitability", 
+        y="Col_2025", 
+        text="Country", 
+        color=df_selected['Continent'],
+        title="Retirement Suitability vs Cost of Living", 
+        labels={
+            "Col_2025": "Cost of Living (0 - 100)", 
+            "Retirement Suitability": "Retirement Suitability (0 - 100)",
+            "Pollution_Hover": "Pollution"
+        },
+        template="plotly_dark", 
+        category_orders={"Continent": ["America", "Europe", "Asia", "Africa", "Oceania"]},
+        hover_data=hover_data_adjusted
+    )
+
+# Add red border circles for missing data points
+    # Ensure red circles follow continent filtering
+    incomplete_data = df_selected[
+        (df_selected['Valid_Var_Count'] < len(selected_vars)) &
+        (df_selected['Continent'].isin(df_selected['Continent'].unique()))
+    ]
+
+    # Add red border circles for countries with missing data
+    if not incomplete_data.empty:
+        highlight_trace = px.scatter(
+            incomplete_data,
+            x="Retirement Suitability",
+            y="Col_2025",
+            text="Country",
+            hover_data=hover_data_adjusted
+        ).data[0]
+
+        # Modify marker properties for empty red circles
+        highlight_trace.marker.symbol = "circle-open"  # Ensures the empty red circle
+        highlight_trace.marker.size = 15
+        highlight_trace.marker.line.width = 2
+        highlight_trace.marker.color = "red"
+        highlight_trace.name = "Incomplete Data"  # Custom name in legend instead of "NA"
+
+        fig_scatter.add_trace(highlight_trace)
+
+        # Ensure "Incomplete Data" appears as a clickable legend entry
+        fig_scatter.update_traces(selector=dict(name="Incomplete Data"), showlegend=True)
+
+
+
+    fig_scatter.update_traces(marker=dict(size=10), textposition='top center')
+
+    fig_scatter.update_layout(
+        title=dict(text="Retirement Suitability vs Cost of Living", font=dict(color='white', size=24), x=0.5, xanchor="center"),
+        xaxis=dict(linecolor='white', tickfont=dict(color='white'), showgrid=True, gridcolor='rgba(255, 255, 255, 0.3)', gridwidth=1),
+        yaxis=dict(linecolor='white', tickfont=dict(color='white'), showgrid=True, gridcolor='rgba(255, 255, 255, 0.3)', gridwidth=1),
+        legend=dict(font=dict(color="white")),
+        paper_bgcolor='black', plot_bgcolor='black'
+    )
+
+    st.plotly_chart(fig_scatter, use_container_width=True)
+
+    # Map Visualization
+    st.write("### Understand the spatial distribution of the variables that make up the Retirement Suitability")
+    selected_map_var = st.selectbox("", selected_vars)
     
-    df_selected["Data_Completion"] = df_selected["Country"].apply(
-        lambda x: "Incomplete Data" if x in incomplete_data["Country"].values else "Complete Data"
-    )
-
-    # Create figure object
-    fig = go.Figure()
-
-    # 🌍 First trace (Color Legend - Continents)
-    for continent in df_selected["Continent"].unique():
-        subset = df_selected[df_selected["Continent"] == continent]
-        fig.add_trace(go.Scatter(
-            x=subset["Retirement Suitability"],
-            y=subset["Col_2025"],
-            mode="markers",
-            marker=dict(size=12, color=subset["Continent"].map({
-                "Europe": "blue", "America": "red", "Asia": "green", "Oceania": "purple", "Africa": "orange"
-            })),
-            name=continent,
-            legendgroup="Continent",  # Group all continents together
-        ))
-
-    # ✅ Second trace (Shape Legend - Data Completeness)
-    for completeness in ["Complete Data", "Incomplete Data"]:
-        subset = df_selected[df_selected["Data_Completion"] == completeness]
-        fig.add_trace(go.Scatter(
-            x=subset["Retirement Suitability"],
-            y=subset["Col_2025"],
-            mode="markers",
-            marker=dict(size=12, symbol="circle" if completeness == "Complete Data" else "x", 
-                        color="black"),  # Keep color from continents above
-            name=completeness,
-            legendgroup="Data Availability",  # Separate legend
-        ))
-
-    # Update layout for **two separate legends**
-    fig.update_layout(
-        title="Retirement Suitability vs Cost of Living",
-        xaxis_title="Retirement Suitability (0 - 100)",
-        yaxis_title="Cost of Living (0 - 100)",
-        legend=dict(traceorder="grouped"),
-        paper_bgcolor='black', 
-        plot_bgcolor='black'
-    )
-
-    # Show the chart
-    st.plotly_chart(fig, use_container_width=True)
-
+    fig_map = px.choropleth(df_selected, locations="Country", locationmode="country names", color=selected_map_var, color_continuous_scale="RdYlGn")
+    
+    st.plotly_chart(fig_map, use_container_width=True)
 
 
 
