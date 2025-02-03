@@ -137,9 +137,11 @@ if selected_vars:
 
     # Update hover data mapping
     hover_data_adjusted = {var: ':.2f' for var in selected_vars}
-    if "Pollution" in selected_vars:
-        hover_data_adjusted["Pollution_Hover"] = ':.2f'  # Use the inverted Pollution for hover
-        hover_data_adjusted.pop("Pollution", None)  # Remove the original Pollution from hover
+    hover_data_adjusted["Valid_Var_Count"] = True  # Show count of available variables
+
+    # Ensure missing values are displayed as "NA"
+    df_selected = df_selected.fillna("NA")  
+
 
     fig_scatter = px.scatter(
         df_selected, 
@@ -167,8 +169,10 @@ if selected_vars:
             x="Retirement Suitability",
             y="Col_2025",
             text="Country",
-            color_discrete_sequence=["red"]
+            color_discrete_sequence=["red"],
+            hover_data=hover_data_adjusted  # Ensure it includes all variables, even if missing
         ).data[0]
+
 
         highlight_trace.marker.symbol = "circle-open"
         highlight_trace.marker.size = 15
