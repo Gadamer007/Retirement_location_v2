@@ -167,31 +167,31 @@ if selected_vars:
         hover_data=hover_data_adjusted
     )
 
-# Add red border circles for missing data points
-    # Ensure red circles follow continent filtering
-    incomplete_data = df_selected[
-        (df_selected['Valid_Var_Count'] < len(selected_vars)) &
-        (df_selected['Continent'].isin(df_selected['Continent'].unique()))
-    ]
+# Identify incomplete data points
+incomplete_data = df_selected[df_selected['Valid_Var_Count'] < len(selected_vars)]
 
-    # Add red border circles for countries with missing data
-    if not incomplete_data.empty:
-        highlight_trace = px.scatter(
-            incomplete_data,
-            x="Retirement Suitability",
-            y="Col_2025",
-            text="Country",
-            hover_data=hover_data_adjusted
-        ).data[0]
+if not incomplete_data.empty:
+    # Create a separate trace for incomplete data, removing them from the main dataset
+    incomplete_trace = px.scatter(
+        incomplete_data,
+        x="Retirement Suitability",
+        y="Col_2025",
+        text="Country",
+        hover_data=hover_data_adjusted
+    ).data[0]
 
-        # Modify marker properties for empty red circles
-        highlight_trace.marker.symbol = "circle-open"  # Ensures the empty red circle
-        highlight_trace.marker.size = 15
-        highlight_trace.marker.line.width = 2
-        highlight_trace.marker.color = "red"
-        highlight_trace.name = "Incomplete Data"  # Custom name in legend instead of "NA"
+    # Modify marker properties for incomplete data points (fully colored red circles)
+    incomplete_trace.marker.symbol = "circle"
+    incomplete_trace.marker.size = 10
+    incomplete_trace.marker.color = "red"
+    incomplete_trace.name = "Incomplete Data"
 
-        fig_scatter.add_trace(highlight_trace)
+    # Remove these countries from the main scatter plot so they only appear under "Incomplete Data"
+    df_selected = df_selected[~df_selected["Country"].isin(incomplete_data["Country"])]
+
+    # Add the modified trace to the figure
+    fig_scatter.add_trace(incomplete_trace)
+
 
         # Ensure "Incomplete Data" appears as a clickable legend entry
         fig_scatter.update_traces(selector=dict(name="Incomplete Data"), showlegend=True)
