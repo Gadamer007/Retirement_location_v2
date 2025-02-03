@@ -114,18 +114,22 @@ for label in variables:
         selected_vars.append(label)
 
 if selected_vars:
-    df_selected = data[['Country', 'Col_2025', 'Continent'] + selected_vars].copy()
-    df_selected['Valid_Var_Count'] = df_selected[selected_vars].count(axis=1)
-    df_selected['Retirement Suitability'] = df_selected[selected_vars].sum(axis=1) / df_selected['Valid_Var_Count']
+    # Start with full dataset
+    df_filtered = data.copy()
 
-
+    # Apply slider filters **before creating df_selected**
     for var in selected_vars:
         max_category = sliders[var]  
         category_col = f"{var}_Category"
     
-        # Ensure category column exists before filtering
-        if category_col in data.columns:
-            data_filtered = data[data[category_col].astype(float) <= max_category]  
+        if category_col in df_filtered.columns:
+            df_filtered = df_filtered[df_filtered[category_col].astype(float) <= max_category]  
+
+    # Now create df_selected from the already filtered data
+    df_selected = df_filtered[['Country', 'Col_2025', 'Continent'] + selected_vars].copy()
+    df_selected['Valid_Var_Count'] = df_selected[selected_vars].count(axis=1)
+    df_selected['Retirement Suitability'] = df_selected[selected_vars].sum(axis=1) / df_selected['Valid_Var_Count']
+
 
 
     df_selected['Retirement Suitability'] = df_selected[selected_vars].mean(axis=1)
