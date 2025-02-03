@@ -92,14 +92,22 @@ for label in variables:
         selected_vars.append(label)
 
 if selected_vars:
-    df_selected = data[['Country', 'Col_2025', 'Continent'] + selected_vars + [f"{var}_Category" for var in selected_vars]].dropna()
+    # Ensure only available columns are selected
+    available_vars = [var for var in selected_vars if var in data.columns]
+    available_categories = [f"{var}_Category" for var in available_vars if f"{var}_Category" in data.columns]
+    df_selected = data[['Country', 'Col_2025', 'Continent'] + available_vars + available_categories].copy()
+    
+    # Drop rows with missing values only for selected variables
+    df_selected.dropna(subset=available_vars, inplace=True)
     
     # Apply filters based on slider values
-    for var in selected_vars:
+    for var in available_vars:
         max_category = sliders[var]
-        df_selected = df_selected[df_selected[f"{var}_Category"].astype(int) <= max_category]
+        category_col = f"{var}_Category"
+        if category_col in df_selected.columns:
+            df_selected = df_selected[df_selected[category_col].astype(int) <= max_category]
     
-    df_selected['Retirement Suitability'] = df_selected[selected_vars].mean(axis=1)
+    df_selected['Retirement Suitability'] = df_selected[available_vars].mean(axis=1)
 
     # Scatter Plot
     fig_scatter = px.scatter(
@@ -115,7 +123,7 @@ if selected_vars:
         },
         template="plotly_dark", 
         category_orders={"Continent": ["America", "Europe", "Asia", "Africa", "Oceania"]},
-        hover_data={var: True for var in selected_vars},
+        hover_data={var: True for var in available_vars},
         size_max=15
     )
 
@@ -150,7 +158,7 @@ if selected_vars:
 
     # Map Visualization
     st.write("### Understand the spatial distribution of the variables that make up the Retirement Suitability")
-    selected_map_var = st.selectbox("", selected_vars)
+    selected_map_var = st.selectbox("", available_vars)
     
     fig_map = px.choropleth(df_selected, locations="Country", locationmode="country names", color=selected_map_var, color_continuous_scale="RdYlGn")
     
