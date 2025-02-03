@@ -1,7 +1,6 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-import plotly.graph_objects as go
 import numpy as np
 import requests
 from io import BytesIO
@@ -11,9 +10,11 @@ from io import BytesIO
 def load_data():
     url = "https://raw.githubusercontent.com/Gadamer007/Retirement_location/main/Ret_data.xlsx"  # GitHub raw URL
     
+    # Download the file content from GitHub
     response = requests.get(url)
-    response.raise_for_status()
+    response.raise_for_status()  # Ensure we stop on bad responses (e.g., 404)
 
+    # Load the Excel file into Pandas from the downloaded content
     df = pd.read_excel(BytesIO(response.content), sheet_name="Country")
     return df
 
@@ -58,27 +59,48 @@ continent_mapping = {
     'Cyprus': 'Europe', 'Kosovo (Disputed Territory)': 'Europe', 'Australia': 'Oceania', 'New Zealand': 'Oceania'
 }
 
-
-# Ensure all expected columns exist
-data['Col_2025'] = data.get('Col_2025', np.nan)
+# Assign continent
+data['Continent'] = data['Country'].map(continent_mapping)
 
 # Categorize each variable into percentiles (quintiles)
 def categorize_percentiles(df, variables):
     for var in variables:
         if var in df.columns:
             if var == "Pollution":
+                # Invert Pollution so lower values are better
                 df[f"{var}_Category"] = pd.qcut(
                     df[var].rank(method='min', ascending=False, na_option='bottom'),
-                    5, labels=[5, 4, 3, 2, 1] 
+                    5, labels=[5, 4, 3, 2, 1]  # 1 = Cleanest, 5 = Most Polluted
                 )
             else:
                 df[f"{var}_Category"] = pd.qcut(
                     df[var].rank(method='first', ascending=True, na_option='bottom'),
-                    5, labels=[5, 4, 3, 2, 1]
+                    5, labels=[5, 4, 3, 2, 1]  # 1 = Best, 5 = Worst
                 )
     return df
 
 data = categorize_percentiles(data, list(column_mapping.values()))
+
+# Title for the Tool
+st.title("Best Countries for Early Retirement: Where to Retire Abroad?")
+
+# Instructions Section
+st.write("### Instructions for Using the Tool")
+instructions = """
+- This tool helps users identify the **best countries for retirement** abroad.  
+- Use the **left panel** to **select variables** that matter to you (e.g., uncheck Pollution if it’s not a factor).  
+- **Adjust sliders** to filter out low-performing countries for a given variable (e.g., setting Safety from 5 to 4 removes the least safe countries).  
+- The tool calculates a **Retirement Suitability Score** as the average of the selected factors.  
+- The **figure plots this score** against **cost of living (COL)** to highlight potential destinations.  
+- Use the **zoom tool** (top-right of the figure) to explore specific countries.  
+- Click on **legend continents** to hide/unhide regions.  
+- **Example**: Setting strict criteria for Safety (2), Healthcare (2), Political Stability (4), Pollution (3), and Climate (3) results in 6 qualifying countries. Spain, Portugal, and Japan emerge as good candidates with a relatively low COL.  
+- The **map below** shows how the Retirement Suitability factors are distributed geographically.  
+- **Data is from Numbeo (2025)**, except for Political Stability, which is based on the **World Bank's Governance Indicators (2023)**.  
+- The tool does not account for **Capital Gains Tax (CGT)**, but users should consider it (**[see here](https://taxsummaries.pwc.com/quick-charts/capital-gains-tax-cgt-rates)**).  
+"""
+st.write(instructions)
+
 
 # Sidebar Filters
 st.sidebar.subheader("Select Variables for Retirement Suitability")
@@ -88,28 +110,35 @@ variables = list(column_mapping.values())
 
 for label in variables:
     if st.sidebar.checkbox(label, value=True):
-        sliders[label] = st.sidebar.slider(f"{label}", 1, 5, 5)
+        sliders[label] = st.sidebar.slider(f"{label}", 1, 5, 5, format=None)
         selected_vars.append(label)
 
 if selected_vars:
-    # Ensure only available columns are selected
-    available_vars = [var for var in selected_vars if var in data.columns]
-    available_categories = [f"{var}_Category" for var in available_vars if f"{var}_Category" in data.columns]
-    df_selected = data[['Country', 'Col_2025', 'Continent'] + available_vars + available_categories].copy()
-    
-    # Drop rows with missing values only for selected variables
-    df_selected.dropna(subset=available_vars, inplace=True)
-    
-    # Apply filters based on slider values
-    for var in available_vars:
-        max_category = sliders[var]
-        category_col = f"{var}_Category"
-        if category_col in df_selected.columns:
-            df_selected = df_selected[df_selected[category_col].astype(int) <= max_category]
-    
-    df_selected['Retirement Suitability'] = df_selected[available_vars].mean(axis=1)
+    df_selected = data[['Country', 'Col_2025', 'Continent'] + selected_vars].copy()
+    df_selected['Valid_Var_Count'] = df_selected[selected_vars].count(axis=1)
+    df_selected['Retirement Suitability'] = df_selected[selected_vars].sum(axis=1) / df_selected['Valid_Var_Count']
+
+
+    for var in selected_vars:
+        max_category = sliders[var]  
+        df_selected = df_selected[df_selected[f"{var}_Category"].astype(int) <= max_category]
+
+    df_selected['Retirement Suitability'] = df_selected[selected_vars].mean(axis=1)
 
     # Scatter Plot
+    # Ensure we do not modify the original DataFrame
+    df_selected = df_selected.copy()
+
+    # If Pollution is in selected variables, create the inverse for hover display
+    if "Pollution" in selected_vars:
+        df_selected["Pollution_Hover"] = 100 - df_selected["Pollution"]  # Invert Pollution values
+
+    # Update hover data mapping
+    hover_data_adjusted = {var: ':.2f' for var in selected_vars}
+    if "Pollution" in selected_vars:
+        hover_data_adjusted["Pollution_Hover"] = ':.2f'  # Use the inverted Pollution for hover
+        hover_data_adjusted.pop("Pollution", None)  # Remove the original Pollution from hover
+
     fig_scatter = px.scatter(
         df_selected, 
         x="Retirement Suitability", 
@@ -119,37 +148,32 @@ if selected_vars:
         title="Retirement Suitability vs Cost of Living", 
         labels={
             "Col_2025": "Cost of Living (0 - 100)", 
-            "Retirement Suitability": "Retirement Suitability (0 - 100)"
+            "Retirement Suitability": "Retirement Suitability (0 - 100)",
+            "Pollution_Hover": "Pollution"
         },
         template="plotly_dark", 
         category_orders={"Continent": ["America", "Europe", "Asia", "Africa", "Oceania"]},
-        hover_data={var: True for var in available_vars},
-        size_max=15
+        hover_data=hover_data_adjusted
     )
 
-    # Add red circles around countries with incomplete data
-    for i, row in df_selected.iterrows():
-        if row.isna().any():
-            fig_scatter.add_trace(go.Scatter(
-                x=[row['Retirement Suitability']],
-                y=[row['Col_2025']],
-                mode='markers',
-                marker=dict(symbol='circle-open', color='red', size=13, line=dict(width=2)),
-                name='Incomplete Data',
-                showlegend=False
-            ))
+# Add red border circles for missing data points
+    incomplete_data = df_selected[df_selected['Valid_Var_Count'] < len(selected_vars)]
+    fig_scatter.add_trace(px.scatter(
+        incomplete_data,
+        x="Retirement Suitability",
+        y="Col_2025",
+        text="Country",
+        mode="markers",
+        marker=dict(symbol="circle-open", size=15, color="red", line=dict(width=2)),
+    ).data[0])
 
-    # Add proper legend for incomplete data
-    fig_scatter.add_trace(go.Scatter(
-        x=[None], y=[None],
-        mode='markers',
-        marker=dict(symbol='circle-open', color='red', size=13, line=dict(width=2)),
-        name='Incomplete Data',
-        legendrank=10
-    ))
+
+    fig_scatter.update_traces(marker=dict(size=10), textposition='top center')
 
     fig_scatter.update_layout(
         title=dict(text="Retirement Suitability vs Cost of Living", font=dict(color='white', size=24), x=0.5, xanchor="center"),
+        xaxis=dict(linecolor='white', tickfont=dict(color='white'), showgrid=True, gridcolor='rgba(255, 255, 255, 0.3)', gridwidth=1),
+        yaxis=dict(linecolor='white', tickfont=dict(color='white'), showgrid=True, gridcolor='rgba(255, 255, 255, 0.3)', gridwidth=1),
         legend=dict(font=dict(color="white")),
         paper_bgcolor='black', plot_bgcolor='black'
     )
@@ -158,7 +182,7 @@ if selected_vars:
 
     # Map Visualization
     st.write("### Understand the spatial distribution of the variables that make up the Retirement Suitability")
-    selected_map_var = st.selectbox("", available_vars)
+    selected_map_var = st.selectbox("", selected_vars)
     
     fig_map = px.choropleth(df_selected, locations="Country", locationmode="country names", color=selected_map_var, color_continuous_scale="RdYlGn")
     
