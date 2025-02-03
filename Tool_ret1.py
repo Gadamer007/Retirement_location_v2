@@ -59,8 +59,6 @@ continent_mapping = {
 }
 
 
-data['Continent'] = data['Country'].map(continent_mapping)
-
 # Ensure all expected columns exist
 data['Col_2025'] = data.get('Col_2025', np.nan)
 
@@ -84,6 +82,11 @@ if selected_vars:
     df_selected = data[['Country', 'Col_2025', 'Continent', 'Retirement Suitability', 'Has_Incomplete_Data'] + selected_vars].copy()
     df_selected[selected_vars] = df_selected[selected_vars].astype(str).replace('nan', 'NA')
     
+    # Apply filters based on slider values
+    for var in selected_vars:
+        max_category = sliders[var]
+        df_selected = df_selected[df_selected[var].astype(str) <= str(max_category)]
+    
     # Scatter Plot
     fig_scatter = px.scatter(
         df_selected, 
@@ -98,7 +101,8 @@ if selected_vars:
         },
         template="plotly_dark", 
         category_orders={"Continent": ["America", "Europe", "Asia", "Africa", "Oceania"]},
-        hover_data={var: True for var in selected_vars}
+        hover_data={var: True for var in selected_vars},
+        size_max=15
     )
 
     # Add red circles around countries with incomplete data
@@ -108,10 +112,18 @@ if selected_vars:
                 x=[row['Retirement Suitability']],
                 y=[row['Col_2025']],
                 mode='markers',
-                marker=dict(symbol='circle-open', color='red', size=15, line=dict(width=2)),
+                marker=dict(symbol='circle-open', color='red', size=17, line=dict(width=3)),
                 name='Incomplete Data',
-                showlegend=True if i == 0 else False
+                showlegend=False
             ))
+
+    # Add legend for incomplete data
+    fig_scatter.add_trace(go.Scatter(
+        x=[None], y=[None],
+        mode='markers',
+        marker=dict(symbol='circle-open', color='red', size=17, line=dict(width=3)),
+        name='Incomplete Data'
+    ))
 
     fig_scatter.update_layout(
         title=dict(text="Retirement Suitability vs Cost of Living", font=dict(color='white', size=24), x=0.5, xanchor="center"),
