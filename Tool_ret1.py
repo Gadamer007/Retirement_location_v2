@@ -149,11 +149,18 @@ if selected_vars:
     # Ensure missing values are displayed as "NA"
     df_selected = df_selected.fillna("NA")  
 
-
+    # Identify incomplete data points 
+    incomplete_data = df_selected[df_selected['Valid_Var_Count'] < len(selected_vars)]
+    
     # Add a new column for shape categorization (Circle = Complete, X = Incomplete)
+    # Identify incomplete data points (must be defined before applying lambda)
+    incomplete_data = df_selected[df_selected['Valid_Var_Count'] < len(selected_vars)]
+
+    # Create a new column to differentiate between complete and incomplete data
     df_selected["Data_Completion"] = df_selected["Country"].apply(
-        lambda x: "Complete Data" if x not in incomplete_data["Country"].values else "Incomplete Data"
+        lambda x: "Incomplete Data" if x in incomplete_data["Country"].values else "Complete Data"
     )
+
 
     fig_scatter = px.scatter(
         df_selected, 
@@ -178,8 +185,7 @@ if selected_vars:
     fig_scatter.update_traces(marker=dict(size=10), textposition="top center")  # Moves label above bubble
 
 
-# Identify incomplete data points
-incomplete_data = df_selected[df_selected['Valid_Var_Count'] < len(selected_vars)]
+
 
 # Remove incomplete data from the main dataset before plotting
 df_selected = df_selected[~df_selected["Country"].isin(incomplete_data["Country"])]
