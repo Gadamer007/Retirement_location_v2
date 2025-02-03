@@ -171,8 +171,7 @@ if selected_vars:
 incomplete_data = df_selected[df_selected['Valid_Var_Count'] < len(selected_vars)]
 
 if not incomplete_data.empty:
-    # Create a separate trace for incomplete data, removing them from the main dataset
-    incomplete_trace = px.scatter(
+    highlight_trace = px.scatter(
         incomplete_data,
         x="Retirement Suitability",
         y="Col_2025",
@@ -180,17 +179,18 @@ if not incomplete_data.empty:
         hover_data=hover_data_adjusted
     ).data[0]
 
-    # Modify marker properties for incomplete data points (fully colored red circles)
-    incomplete_trace.marker.symbol = "circle"
-    incomplete_trace.marker.size = 10
-    incomplete_trace.marker.color = "red"
-    incomplete_trace.name = "Incomplete Data"
-
-    # Remove these countries from the main scatter plot so they only appear under "Incomplete Data"
-    df_selected = df_selected[~df_selected["Country"].isin(incomplete_data["Country"])]
+    # Modify marker properties for empty red circles (same as before)
+    highlight_trace.marker.symbol = "circle-open"
+    highlight_trace.marker.size = 15
+    highlight_trace.marker.line.width = 2
+    highlight_trace.marker.color = "red"
+    highlight_trace.name = "Incomplete Data"
 
     # Add the modified trace to the figure
-    fig_scatter.add_trace(incomplete_trace)
+    fig_scatter.add_trace(highlight_trace)
+
+    # Remove these countries from the main scatter plot so they disappear when "Incomplete Data" is toggled
+    df_selected = df_selected[~df_selected["Country"].isin(incomplete_data["Country"])]
 
 
     # Ensure "Incomplete Data" appears as a clickable legend entry
