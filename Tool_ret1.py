@@ -166,6 +166,9 @@ if selected_vars:
         category_orders={"Continent": ["America", "Europe", "Asia", "Africa", "Oceania"]},
         hover_data=hover_data_adjusted
     )
+    # Increase bubble size
+    fig_scatter.update_traces(marker=dict(size=14), textposition="top center")  # Moves label above bubble
+
 
 # Identify incomplete data points
 incomplete_data = df_selected[df_selected['Valid_Var_Count'] < len(selected_vars)]
@@ -189,6 +192,9 @@ fig_scatter = px.scatter(
     category_orders={"Continent": ["America", "Europe", "Asia", "Africa", "Oceania"]},
     hover_data=hover_data_adjusted
 )
+# Increase bubble size
+fig_scatter.update_traces(marker=dict(size=14), textposition="top center")  # Moves label above bubble
+
 
 # Add red border circles for incomplete data as a separate trace
 if not incomplete_data.empty:
@@ -202,7 +208,7 @@ if not incomplete_data.empty:
 
     # Modify marker properties for empty red circles
     highlight_trace.marker.symbol = "circle-open"
-    highlight_trace.marker.size = 11
+    highlight_trace.marker.size = 14
     highlight_trace.marker.line.width = 2
     highlight_trace.marker.color = "red"
     highlight_trace.name = "Incomplete Data"
