@@ -59,7 +59,9 @@ continent_mapping = {
 }
 
 
-# Ensure Col_2025 exists, if missing create a placeholder
+data['Continent'] = data['Country'].map(continent_mapping)
+
+# Ensure all expected columns exist
 data['Col_2025'] = data.get('Col_2025', np.nan)
 
 # Compute Retirement Suitability Score
@@ -79,9 +81,7 @@ for label in variables:
         selected_vars.append(label)
 
 if selected_vars:
-    available_columns = ['Country', 'Col_2025', 'Continent', 'Retirement Suitability', 'Has_Incomplete_Data'] + selected_vars
-    df_selected = data[available_columns]
-    df_selected = df_selected.copy()
+    df_selected = data[['Country', 'Col_2025', 'Continent', 'Retirement Suitability', 'Has_Incomplete_Data'] + selected_vars].copy()
     df_selected[selected_vars] = df_selected[selected_vars].astype(str).replace('nan', 'NA')
     
     # Scatter Plot
@@ -130,6 +130,7 @@ if selected_vars:
     fig_map = px.choropleth(df_selected, locations="Country", locationmode="country names", color=selected_map_var, color_continuous_scale="RdYlGn")
     
     st.plotly_chart(fig_map, use_container_width=True)
+
 
 
 
