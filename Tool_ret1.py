@@ -89,19 +89,22 @@ if selected_vars:
             x=subset["Retirement Suitability"],
             y=subset["Col_2025"],
             mode="markers",
-            marker=dict(size=12),
+            marker=dict(size=12, color=subset["Continent"].map({
+                "Europe": "blue", "America": "red", "Asia": "green", "Oceania": "purple", "Africa": "orange"
+            })),
             name=continent,
             legendgroup="Continent",  # Group all continents together
         ))
 
     # ✅ Second trace (Shape Legend - Data Completeness)
-    for completeness in df_selected["Data_Completion"].unique():
+    for completeness in ["Complete Data", "Incomplete Data"]:
         subset = df_selected[df_selected["Data_Completion"] == completeness]
         fig.add_trace(go.Scatter(
             x=subset["Retirement Suitability"],
             y=subset["Col_2025"],
             mode="markers",
-            marker=dict(size=12, symbol="circle" if completeness == "Complete Data" else "x"),
+            marker=dict(size=12, symbol="circle" if completeness == "Complete Data" else "x", 
+                        color="black"),  # Keep color from continents above
             name=completeness,
             legendgroup="Data Availability",  # Separate legend
         ))
