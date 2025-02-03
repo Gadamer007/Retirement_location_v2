@@ -8,13 +8,9 @@ from io import BytesIO
 # Load dataset
 @st.cache_data
 def load_data():
-    url = "https://raw.githubusercontent.com/Gadamer007/Retirement_location/main/Ret_data.xlsx"  # GitHub raw URL
-    
-    # Download the file content from GitHub
+    url = "https://raw.githubusercontent.com/Gadamer007/Retirement_location/main/Ret_data.xlsx"  
     response = requests.get(url)
-    response.raise_for_status()  # Ensure we stop on bad responses (e.g., 404)
-
-    # Load the Excel file into Pandas from the downloaded content
+    response.raise_for_status()
     df = pd.read_excel(BytesIO(response.content), sheet_name="Country")
     return df
 
@@ -62,18 +58,6 @@ continent_mapping = {
 # Assign continent
 data['Continent'] = data['Country'].map(continent_mapping)
 
-# Categorize each variable into percentiles (quintiles)
-def categorize_percentiles(df, variables):
-    for var in variables:
-        if var in df.columns:
-            df[f"{var}_Category"] = pd.qcut(
-                df[var].rank(method='first', ascending=True, na_option='bottom'),
-                5, labels=[5, 4, 3, 2, 1]
-            )
-    return df
-
-data = categorize_percentiles(data, list(column_mapping.values()))
-
 # Sidebar Filters
 st.sidebar.subheader("Select Variables for Retirement Suitability")
 selected_vars = []
@@ -95,7 +79,7 @@ if selected_vars:
         lambda x: "Incomplete Data" if x in incomplete_data["Country"].values else "Complete Data"
     )
 
-    # Create scatter plot with two separate traces
+    # First scatter plot for CONTINENT COLORS (Hide Shape Legend)
     fig_scatter = px.scatter(
         df_selected, 
         x="Retirement Suitability", 
@@ -108,26 +92,30 @@ if selected_vars:
         hover_data=selected_vars
     )
 
-    # Add a separate trace for data completeness
+    # Second scatter plot for DATA COMPLETENESS (Hide Color Legend)
     fig_data = px.scatter(
         df_selected, 
         x="Retirement Suitability", 
         y="Col_2025", 
         symbol="Data_Completion",
+        color="Continent",
         symbol_map={"Complete Data": "circle", "Incomplete Data": "x"},
         template="plotly_dark"
     )
 
     for trace in fig_data.data:
-        trace.showlegend = True
+        trace.showlegend = True  # Show only for symbols
         fig_scatter.add_trace(trace)
 
     # Adjust layout to separate legends
     fig_scatter.update_layout(
-        legend=dict(traceorder="normal"),
+        title=dict(text="Retirement Suitability vs Cost of Living", font=dict(color='white', size=24), x=0.5, xanchor="center"),
+        legend_title_text="Continent",  # First legend title
+        legend_traceorder="grouped",
         paper_bgcolor='black', plot_bgcolor='black'
     )
 
+    # Display the final plot
     st.plotly_chart(fig_scatter, use_container_width=True)
 
 
