@@ -92,18 +92,12 @@ for label in variables:
         selected_vars.append(label)
 
 if selected_vars:
-    # Ensure only available columns are selected
-    available_columns = [col for col in selected_vars + [f"{var}_Category" for var in selected_vars] if col in data.columns]
-    selected_columns = ['Country', 'Col_2025', 'Continent'] + available_columns
-    df_selected = data[selected_columns].copy()
-    df_selected.dropna(subset=selected_vars, inplace=True)
+    df_selected = data[['Country', 'Col_2025', 'Continent'] + selected_vars + [f"{var}_Category" for var in selected_vars]].dropna()
     
     # Apply filters based on slider values
     for var in selected_vars:
         max_category = sliders[var]
-        category_col = f"{var}_Category"
-        if category_col in df_selected.columns:
-            df_selected = df_selected[df_selected[category_col].astype(int) <= max_category]
+        df_selected = df_selected[df_selected[f"{var}_Category"].astype(int) <= max_category]
     
     df_selected['Retirement Suitability'] = df_selected[selected_vars].mean(axis=1)
 
@@ -113,7 +107,7 @@ if selected_vars:
         x="Retirement Suitability", 
         y="Col_2025", 
         text="Country", 
-        color="Continent",
+        color=df_selected['Continent'],
         title="Retirement Suitability vs Cost of Living", 
         labels={
             "Col_2025": "Cost of Living (0 - 100)", 
@@ -132,7 +126,7 @@ if selected_vars:
                 x=[row['Retirement Suitability']],
                 y=[row['Col_2025']],
                 mode='markers',
-                marker=dict(symbol='circle-open', color='red', size=17, line=dict(width=2)),
+                marker=dict(symbol='circle-open', color='red', size=13, line=dict(width=2)),
                 name='Incomplete Data',
                 showlegend=False
             ))
@@ -141,9 +135,9 @@ if selected_vars:
     fig_scatter.add_trace(go.Scatter(
         x=[None], y=[None],
         mode='markers',
-        marker=dict(symbol='circle-open', color='red', size=17, line=dict(width=2)),
+        marker=dict(symbol='circle-open', color='red', size=13, line=dict(width=2)),
         name='Incomplete Data',
-        legendgroup='incomplete'
+        legendrank=10
     ))
 
     fig_scatter.update_layout(
@@ -161,7 +155,6 @@ if selected_vars:
     fig_map = px.choropleth(df_selected, locations="Country", locationmode="country names", color=selected_map_var, color_continuous_scale="RdYlGn")
     
     st.plotly_chart(fig_map, use_container_width=True)
-
 
 
 
