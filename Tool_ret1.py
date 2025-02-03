@@ -8,7 +8,7 @@ from io import BytesIO
 # Load dataset
 @st.cache_data
 def load_data():
-    url = "https://raw.githubusercontent.com/Gadamer007/Retirement_location/main/Ret_data.xlsx"  # GitHub raw URL
+    url = "https://raw.githubusercontent.com/Gadamer007/Retirement_location_v2/main/Ret_data.xlsx"  # GitHub raw URL
     
     response = requests.get(url)
     response.raise_for_status()
@@ -109,47 +109,49 @@ if selected_vars:
     
     df_selected = df_selected[df_selected['Continent'].isin(st.session_state['continent_selection'])]
     
-    # Scatter Plot
-    fig_scatter = px.scatter(
-        df_selected, 
-        x="Retirement Suitability", 
-        y="Col_2025", 
-        text="Country", 
-        color=df_selected['Continent'],
-        title="Retirement Suitability vs Cost of Living", 
-        labels={
-            "Col_2025": "Cost of Living (0 - 100)", 
-            "Retirement Suitability": "Retirement Suitability (0 - 100)"
-        },
-        template="plotly_dark", 
-        category_orders={"Continent": ["America", "Europe", "Asia", "Africa", "Oceania"]},
-        hover_data={var: ':.2f' for var in selected_vars}
-    )
+    # Debugging output
+    st.write("Debugging Info - Columns in df_selected:", df_selected.columns.tolist())
+    st.write("Number of rows:", len(df_selected))
     
-    # Add red circles around incomplete data
-    incomplete_data = df_selected[df_selected['Available Count'] < len(selected_vars)]
-    fig_scatter.add_trace(
-        px.scatter(
-            incomplete_data,
+    if df_selected.empty:
+        st.warning("No countries match the selected criteria. Try adjusting the filters.")
+    else:
+        fig_scatter = px.scatter(
+            df_selected, 
             x="Retirement Suitability", 
             y="Col_2025", 
             text="Country", 
-            marker=dict(symbol='circle-open', color='red', size=12),
-            hovertext="Incomplete Data"
-        ).data[0]
-    )
-    
-    fig_scatter.update_layout(
-        legend_title_text="Continent",
-        legend_traceorder="grouped"
-    )
+            color=df_selected['Continent'],
+            title="Retirement Suitability vs Cost of Living", 
+            labels={
+                "Col_2025": "Cost of Living (0 - 100)", 
+                "Retirement Suitability": "Retirement Suitability (0 - 100)"
+            },
+            template="plotly_dark", 
+            category_orders={"Continent": ["America", "Europe", "Asia", "Africa", "Oceania"]},
+            hover_data={var: ':.2f' for var in selected_vars}
+        )
+        
+        incomplete_data = df_selected[df_selected['Available Count'] < len(selected_vars)]
+        if not incomplete_data.empty:
+            fig_scatter.add_trace(
+                px.scatter(
+                    incomplete_data,
+                    x="Retirement Suitability", 
+                    y="Col_2025", 
+                    text="Country", 
+                    color_discrete_sequence=['red'],
+                    symbol_sequence=['circle-open'],
+                    size_max=15
+                ).data[0]
+            )
+        
+        st.plotly_chart(fig_scatter, use_container_width=True)
     
     # Allow user to filter continents without resetting
     selected_continents = st.multiselect("Select Continents", options=df_selected['Continent'].unique(), default=st.session_state['continent_selection'])
     st.session_state['continent_selection'] = selected_continents
     df_selected = df_selected[df_selected['Continent'].isin(selected_continents)]
-    
-    st.plotly_chart(fig_scatter, use_container_width=True)
     
     # Map Visualization
     st.write("### Understand the spatial distribution of the variables that make up the Retirement Suitability")
