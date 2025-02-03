@@ -152,22 +152,30 @@ if selected_vars:
     df_selected = df_selected.fillna("NA")  
 
 
-    fig_scatter = px.scatter(
-        df_selected[~df_selected["Has_Missing_Data"]],  # Exclude incomplete data by default
-        x="Retirement Suitability", 
-        y="Col_2025", 
-        text="Country", 
-        color=df_selected['Continent'],
-        title="Retirement Suitability vs Cost of Living", 
-        labels={
-            "Col_2025": "Cost of Living (0 - 100)", 
-            "Retirement Suitability": "Retirement Suitability (0 - 100)",
-            "Pollution_Hover": "Pollution"
-        },
-        template="plotly_dark", 
-        category_orders={"Continent": ["America", "Europe", "Asia", "Africa", "Oceania"]},
-        hover_data=hover_data_adjusted
-    )
+    # Ensure df_selected is not empty before plotting
+    if not df_selected.empty and "Retirement Suitability" in df_selected.columns and "Col_2025" in df_selected.columns:
+        fig_scatter = px.scatter(
+            df_selected[~df_selected["Has_Missing_Data"]],  # Exclude incomplete data by default
+            x="Retirement Suitability", 
+            y="Col_2025", 
+            text="Country", 
+            color=df_selected['Continent'],
+            title="Retirement Suitability vs Cost of Living", 
+            labels={
+                "Col_2025": "Cost of Living (0 - 100)", 
+                "Retirement Suitability": "Retirement Suitability (0 - 100)",
+                "Pollution_Hover": "Pollution"
+            },
+            template="plotly_dark", 
+            category_orders={"Continent": ["America", "Europe", "Asia", "Africa", "Oceania"]},
+            hover_data=hover_data_adjusted
+        )
+
+        st.plotly_chart(fig_scatter, use_container_width=True)
+
+    else:
+        st.warning("No data available to plot. Adjust filters to display countries.")
+
 
 
 # Add red border circles for missing data points
