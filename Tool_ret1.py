@@ -170,6 +170,27 @@ if selected_vars:
 # Identify incomplete data points
 incomplete_data = df_selected[df_selected['Valid_Var_Count'] < len(selected_vars)]
 
+# Remove incomplete data from the main dataset before plotting
+df_selected = df_selected[~df_selected["Country"].isin(incomplete_data["Country"])]
+
+# Now create the scatter plot
+fig_scatter = px.scatter(
+    df_selected, 
+    x="Retirement Suitability", 
+    y="Col_2025", 
+    text="Country", 
+    color=df_selected['Continent'],
+    title="Retirement Suitability vs Cost of Living", 
+    labels={
+        "Col_2025": "Cost of Living (0 - 100)", 
+        "Retirement Suitability": "Retirement Suitability (0 - 100)"
+    },
+    template="plotly_dark", 
+    category_orders={"Continent": ["America", "Europe", "Asia", "Africa", "Oceania"]},
+    hover_data=hover_data_adjusted
+)
+
+# Add red border circles for incomplete data as a separate trace
 if not incomplete_data.empty:
     highlight_trace = px.scatter(
         incomplete_data,
@@ -179,7 +200,7 @@ if not incomplete_data.empty:
         hover_data=hover_data_adjusted
     ).data[0]
 
-    # Modify marker properties for empty red circles (same as before)
+    # Modify marker properties for empty red circles
     highlight_trace.marker.symbol = "circle-open"
     highlight_trace.marker.size = 15
     highlight_trace.marker.line.width = 2
@@ -189,34 +210,20 @@ if not incomplete_data.empty:
     # Add the modified trace to the figure
     fig_scatter.add_trace(highlight_trace)
 
-    # Remove these countries from the main scatter plot so they disappear when "Incomplete Data" is toggled
-    df_selected = df_selected[~df_selected["Country"].isin(incomplete_data["Country"])]
+# Ensure "Incomplete Data" appears as a clickable legend entry
+fig_scatter.update_traces(selector=dict(name="Incomplete Data"), showlegend=True)
 
+# Update layout for better visibility
+fig_scatter.update_layout(
+    title=dict(text="Retirement Suitability vs Cost of Living", font=dict(color='white', size=24), x=0.5, xanchor="center"),
+    xaxis=dict(linecolor='white', tickfont=dict(color='white'), showgrid=True, gridcolor='rgba(255, 255, 255, 0.3)', gridwidth=1),
+    yaxis=dict(linecolor='white', tickfont=dict(color='white'), showgrid=True, gridcolor='rgba(255, 255, 255, 0.3)', gridwidth=1),
+    legend=dict(font=dict(color="white")),
+    paper_bgcolor='black', plot_bgcolor='black'
+)
 
-    # Ensure "Incomplete Data" appears as a clickable legend entry
-    fig_scatter.update_traces(selector=dict(name="Incomplete Data"), showlegend=True)
+st.plotly_chart(fig_scatter, use_container_width=True)
 
-
-
-    fig_scatter.update_traces(marker=dict(size=10), textposition='top center')
-
-    fig_scatter.update_layout(
-        title=dict(text="Retirement Suitability vs Cost of Living", font=dict(color='white', size=24), x=0.5, xanchor="center"),
-        xaxis=dict(linecolor='white', tickfont=dict(color='white'), showgrid=True, gridcolor='rgba(255, 255, 255, 0.3)', gridwidth=1),
-        yaxis=dict(linecolor='white', tickfont=dict(color='white'), showgrid=True, gridcolor='rgba(255, 255, 255, 0.3)', gridwidth=1),
-        legend=dict(font=dict(color="white")),
-        paper_bgcolor='black', plot_bgcolor='black'
-    )
-
-    st.plotly_chart(fig_scatter, use_container_width=True)
-
-    # Map Visualization
-    st.write("### Understand the spatial distribution of the variables that make up the Retirement Suitability")
-    selected_map_var = st.selectbox("", selected_vars)
-    
-    fig_map = px.choropleth(df_selected, locations="Country", locationmode="country names", color=selected_map_var, color_continuous_scale="RdYlGn")
-    
-    st.plotly_chart(fig_map, use_container_width=True)
 
 
 
