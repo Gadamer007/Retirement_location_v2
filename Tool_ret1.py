@@ -164,8 +164,7 @@ if selected_vars:
         },
         template="plotly_dark", 
         category_orders={"Continent": ["America", "Europe", "Asia", "Africa", "Oceania"]},
-        hover_data=hover_data_adjusted,
-        size_max=10
+        hover_data=hover_data_adjusted
     )
 
 # Identify incomplete data points
@@ -188,8 +187,7 @@ fig_scatter = px.scatter(
     },
     template="plotly_dark", 
     category_orders={"Continent": ["America", "Europe", "Asia", "Africa", "Oceania"]},
-    hover_data=hover_data_adjusted,
-    size_max=10
+    hover_data=hover_data_adjusted
 )
 
 # Add red border circles for incomplete data as a separate trace
