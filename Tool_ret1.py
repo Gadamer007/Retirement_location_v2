@@ -153,6 +153,13 @@ if selected_vars:
 
 
     # Ensure df_selected is not empty before plotting
+    # Debugging: Print DataFrame info before plotting
+    st.write("### Debugging Info:")
+    st.write("df_selected shape:", df_selected.shape)
+    st.write("df_selected columns:", df_selected.columns.tolist())
+    st.write("df_selected preview:", df_selected.head())
+
+    # Ensure df_selected is not empty before plotting
     if not df_selected.empty and "Retirement Suitability" in df_selected.columns and "Col_2025" in df_selected.columns:
         fig_scatter = px.scatter(
             df_selected[~df_selected["Has_Missing_Data"]],  # Exclude incomplete data by default
@@ -175,6 +182,7 @@ if selected_vars:
 
     else:
         st.warning("No data available to plot. Adjust filters to display countries.")
+
 
 
 
