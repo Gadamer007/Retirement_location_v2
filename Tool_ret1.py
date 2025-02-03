@@ -150,12 +150,19 @@ if selected_vars:
     df_selected = df_selected.fillna("NA")  
 
 
+    # Add a new column for shape categorization (Circle = Complete, X = Incomplete)
+    df_selected["Data_Completion"] = df_selected["Country"].apply(
+        lambda x: "Complete Data" if x not in incomplete_data["Country"].values else "Incomplete Data"
+    )
+
     fig_scatter = px.scatter(
         df_selected, 
         x="Retirement Suitability", 
         y="Col_2025", 
         text="Country", 
-        color=df_selected['Continent'],
+        color=df_selected['Continent'],  # Colors still represent continents
+        symbol="Data_Completion",  # Shapes represent completeness of data
+        symbol_map={"Complete Data": "circle", "Incomplete Data": "x"},  # Define symbols
         title="Retirement Suitability vs Cost of Living", 
         labels={
             "Col_2025": "Cost of Living (0 - 100)", 
@@ -166,6 +173,7 @@ if selected_vars:
         category_orders={"Continent": ["America", "Europe", "Asia", "Africa", "Oceania"]},
         hover_data=hover_data_adjusted
     )
+
     # Increase bubble size
     fig_scatter.update_traces(marker=dict(size=10), textposition="top center")  # Moves label above bubble
 
@@ -177,16 +185,24 @@ incomplete_data = df_selected[df_selected['Valid_Var_Count'] < len(selected_vars
 df_selected = df_selected[~df_selected["Country"].isin(incomplete_data["Country"])]
 
 # Now create the scatter plot
+# Add a new column for shape categorization (Circle = Complete, X = Incomplete)
+df_selected["Data_Completion"] = df_selected["Country"].apply(
+    lambda x: "Complete Data" if x not in incomplete_data["Country"].values else "Incomplete Data"
+)
+
 fig_scatter = px.scatter(
     df_selected, 
     x="Retirement Suitability", 
     y="Col_2025", 
     text="Country", 
-    color=df_selected['Continent'],
+    color=df_selected['Continent'],  # Colors still represent continents
+    symbol="Data_Completion",  # Shapes represent completeness of data
+    symbol_map={"Complete Data": "circle", "Incomplete Data": "x"},  # Define symbols
     title="Retirement Suitability vs Cost of Living", 
     labels={
         "Col_2025": "Cost of Living (0 - 100)", 
-        "Retirement Suitability": "Retirement Suitability (0 - 100)"
+        "Retirement Suitability": "Retirement Suitability (0 - 100)",
+        "Pollution_Hover": "Pollution"
     },
     template="plotly_dark", 
     category_orders={"Continent": ["America", "Europe", "Asia", "Africa", "Oceania"]},
@@ -195,26 +211,6 @@ fig_scatter = px.scatter(
 # Increase bubble size
 fig_scatter.update_traces(marker=dict(size=10), textposition="top center")  # Moves label above bubble
 
-
-# Add red border circles for incomplete data as a separate trace
-if not incomplete_data.empty:
-    highlight_trace = px.scatter(
-        incomplete_data,
-        x="Retirement Suitability",
-        y="Col_2025",
-        text="Country",
-        hover_data=hover_data_adjusted
-    ).data[0]
-
-    # Modify marker properties for empty red circles
-    highlight_trace.marker.symbol = "circle-open"
-    highlight_trace.marker.size = 10
-    highlight_trace.marker.line.width = 2
-    highlight_trace.marker.color = "red"
-    highlight_trace.name = "Incomplete Data"
-
-    # Add the modified trace to the figure
-    fig_scatter.add_trace(highlight_trace)
 
 # Ensure "Incomplete Data" appears as a clickable legend entry
 fig_scatter.update_traces(selector=dict(name="Incomplete Data"), showlegend=True)
