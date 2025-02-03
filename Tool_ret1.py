@@ -193,8 +193,8 @@ if not incomplete_data.empty:
     fig_scatter.add_trace(incomplete_trace)
 
 
-        # Ensure "Incomplete Data" appears as a clickable legend entry
-        fig_scatter.update_traces(selector=dict(name="Incomplete Data"), showlegend=True)
+    # Ensure "Incomplete Data" appears as a clickable legend entry
+    fig_scatter.update_traces(selector=dict(name="Incomplete Data"), showlegend=True)
 
 
 
