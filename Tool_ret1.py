@@ -94,14 +94,16 @@ for label in variables:
 if selected_vars:
     # Ensure only available columns are selected
     available_columns = [col for col in selected_vars + [f"{var}_Category" for var in selected_vars] if col in data.columns]
-    df_selected = data[['Country', 'Col_2025', 'Continent'] + available_columns].copy()
+    selected_columns = ['Country', 'Col_2025', 'Continent'] + available_columns
+    df_selected = data[selected_columns].copy()
     df_selected.dropna(subset=selected_vars, inplace=True)
     
     # Apply filters based on slider values
     for var in selected_vars:
         max_category = sliders[var]
-        if f"{var}_Category" in df_selected.columns:
-            df_selected = df_selected[df_selected[f"{var}_Category"].astype(int) <= max_category]
+        category_col = f"{var}_Category"
+        if category_col in df_selected.columns:
+            df_selected = df_selected[df_selected[category_col].astype(int) <= max_category]
     
     df_selected['Retirement Suitability'] = df_selected[selected_vars].mean(axis=1)
 
