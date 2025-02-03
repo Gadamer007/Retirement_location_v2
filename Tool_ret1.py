@@ -162,33 +162,32 @@ if selected_vars:
     )
 
 
-    fig_scatter = px.scatter(
+    fig_scatter.update_traces(se
         df_selected, 
         x="Retirement Suitability", 
         y="Col_2025", 
         text="Country", 
-        color=df_selected['Continent'],  # Colors still represent continents
-        symbol="Data_Completion",  # Shapes represent completeness of data
-        symbol_map={"Complete Data": "circle", "Incomplete Data": "x"},  # Define symbols
+        color="Continent",  # Separate color legend for continents
+        symbol="Data_Completion",  # Separate symbol legend for completeness
+        symbol_map={"Complete Data": "circle", "Incomplete Data": "x"},  # Define shapes
         title="Retirement Suitability vs Cost of Living", 
         labels={
             "Col_2025": "Cost of Living (0 - 100)", 
             "Retirement Suitability": "Retirement Suitability (0 - 100)",
-            "Pollution_Hover": "Pollution"
+            "Pollution_Hover": "Pollution",
+            "Continent": "Continent",  # Legend Title for Continents
+            "Data_Completion": "Data Availability"  # Legend Title for Data Completeness
         },
         template="plotly_dark", 
         category_orders={"Continent": ["America", "Europe", "Asia", "Africa", "Oceania"]},
         hover_data=hover_data_adjusted
     )
 
+
     # Increase bubble size
     fig_scatter.update_traces(marker=dict(size=10), textposition="top center")  # Moves label above bubble
 
 
-
-
-# Remove incomplete data from the main dataset before plotting
-df_selected = df_selected[~df_selected["Country"].isin(incomplete_data["Country"])]
 
 # Now create the scatter plot
 # Add a new column for shape categorization (Circle = Complete, X = Incomplete)
@@ -201,25 +200,25 @@ fig_scatter = px.scatter(
     x="Retirement Suitability", 
     y="Col_2025", 
     text="Country", 
-    color=df_selected['Continent'],  # Colors still represent continents
-    symbol="Data_Completion",  # Shapes represent completeness of data
-    symbol_map={"Complete Data": "circle", "Incomplete Data": "x"},  # Define symbols
+    color="Continent",  # Separate color legend for continents
+    symbol="Data_Completion",  # Separate symbol legend for completeness
+    symbol_map={"Complete Data": "circle", "Incomplete Data": "x"},  # Define shapes
     title="Retirement Suitability vs Cost of Living", 
     labels={
         "Col_2025": "Cost of Living (0 - 100)", 
         "Retirement Suitability": "Retirement Suitability (0 - 100)",
-        "Pollution_Hover": "Pollution"
+        "Pollution_Hover": "Pollution",
+        "Continent": "Continent",  # Legend Title for Continents
+        "Data_Completion": "Data Availability"  # Legend Title for Data Completeness
     },
     template="plotly_dark", 
     category_orders={"Continent": ["America", "Europe", "Asia", "Africa", "Oceania"]},
     hover_data=hover_data_adjusted
 )
+
 # Increase bubble size
 fig_scatter.update_traces(marker=dict(size=10), textposition="top center")  # Moves label above bubble
 
-
-# Ensure "Incomplete Data" appears as a clickable legend entry
-fig_scatter.update_traces(selector=dict(name="Incomplete Data"), showlegend=True)
 
 # Update layout for better visibility
 fig_scatter.update_layout(
@@ -230,7 +229,22 @@ fig_scatter.update_layout(
     paper_bgcolor='black', plot_bgcolor='black'
 )
 
+# Increase bubble size for visibility and move country labels above the bubbles
+fig_scatter.update_traces(marker=dict(size=12), textposition="top center")  # Enlarged bubbles
+
+# Ensure the layout separates legends
+fig_scatter.update_layout(
+    title=dict(text="Retirement Suitability vs Cost of Living", font=dict(color='white', size=24), x=0.5, xanchor="center"),
+    xaxis=dict(linecolor='white', tickfont=dict(color='white'), showgrid=True, gridcolor='rgba(255, 255, 255, 0.3)', gridwidth=1),
+    yaxis=dict(linecolor='white', tickfont=dict(color='white'), showgrid=True, gridcolor='rgba(255, 255, 255, 0.3)', gridwidth=1),
+    legend_title_text="Legend",  # Add a title to the legend
+    legend_traceorder="grouped",  # Group legend items
+    paper_bgcolor='black', plot_bgcolor='black'
+)
+
+# Display the final plot
 st.plotly_chart(fig_scatter, use_container_width=True)
+
 
 
 
