@@ -66,16 +66,10 @@ data['Continent'] = data['Country'].map(continent_mapping)
 def categorize_percentiles(df, variables):
     for var in variables:
         if var in df.columns:
-            if var == "Pollution":
-                df[f"{var}_Category"] = pd.qcut(
-                    df[var].rank(method='min', ascending=False, na_option='bottom'),
-                    5, labels=[5, 4, 3, 2, 1]
-                )
-            else:
-                df[f"{var}_Category"] = pd.qcut(
-                    df[var].rank(method='first', ascending=True, na_option='bottom'),
-                    5, labels=[5, 4, 3, 2, 1]
-                )
+            df[f"{var}_Category"] = pd.qcut(
+                df[var].rank(method='first', ascending=True, na_option='bottom'),
+                5, labels=[5, 4, 3, 2, 1]
+            )
     return df
 
 data = categorize_percentiles(data, list(column_mapping.values()))
@@ -83,53 +77,54 @@ data = categorize_percentiles(data, list(column_mapping.values()))
 # Sidebar Filters
 st.sidebar.subheader("Select Variables for Retirement Suitability")
 selected_vars = []
-sliders = {}
 variables = list(column_mapping.values())
 
 for label in variables:
     if st.sidebar.checkbox(label, value=True):
-        sliders[label] = st.sidebar.slider(f"{label}", 1, 5, 5, format=None)
         selected_vars.append(label)
 
 if selected_vars:
     df_filtered = data.copy()
-
-    for var in selected_vars:
-        max_category = sliders[var]  
-        category_col = f"{var}_Category"
-        if category_col in df_filtered.columns:
-            df_filtered = df_filtered[df_filtered[category_col].astype(float) <= max_category]  
-
     df_selected = df_filtered[['Country', 'Col_2025', 'Continent'] + selected_vars].copy()
     df_selected['Valid_Var_Count'] = df_selected[selected_vars].count(axis=1)
     df_selected['Retirement Suitability'] = df_selected[selected_vars].mean(axis=1)
 
     incomplete_data = df_selected[df_selected['Valid_Var_Count'] < len(selected_vars)]
-
+    
     df_selected["Data_Completion"] = df_selected["Country"].apply(
         lambda x: "Incomplete Data" if x in incomplete_data["Country"].values else "Complete Data"
     )
 
+    # Create scatter plot with two separate traces
     fig_scatter = px.scatter(
         df_selected, 
         x="Retirement Suitability", 
         y="Col_2025", 
         text="Country", 
         color="Continent",
-        symbol="Data_Completion",
-        symbol_map={"Complete Data": "circle", "Incomplete Data": "x"},
         title="Retirement Suitability vs Cost of Living",
         labels={"Col_2025": "Cost of Living (0 - 100)", "Retirement Suitability": "Retirement Suitability (0 - 100)"},
         template="plotly_dark",
         hover_data=selected_vars
     )
 
-    fig_scatter.update_traces(marker=dict(size=12), textposition="top center")
+    # Add a separate trace for data completeness
+    fig_data = px.scatter(
+        df_selected, 
+        x="Retirement Suitability", 
+        y="Col_2025", 
+        symbol="Data_Completion",
+        symbol_map={"Complete Data": "circle", "Incomplete Data": "x"},
+        template="plotly_dark"
+    )
 
+    for trace in fig_data.data:
+        trace.showlegend = True
+        fig_scatter.add_trace(trace)
+
+    # Adjust layout to separate legends
     fig_scatter.update_layout(
-        title=dict(text="Retirement Suitability vs Cost of Living", font=dict(color='white', size=24), x=0.5, xanchor="center"),
-        legend_title_text="Legend",
-        legend_traceorder="grouped",
+        legend=dict(traceorder="normal"),
         paper_bgcolor='black', plot_bgcolor='black'
     )
 
