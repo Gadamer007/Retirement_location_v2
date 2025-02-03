@@ -130,6 +130,8 @@ if selected_vars:
     df_selected['Valid_Var_Count'] = df_selected[selected_vars].count(axis=1)
     df_selected['Retirement Suitability'] = df_selected[selected_vars].sum(axis=1) / df_selected['Valid_Var_Count']
 
+    # Mark countries that have missing data
+    df_selected["Has_Missing_Data"] = df_selected["Valid_Var_Count"] < len(selected_vars)
 
 
     df_selected['Retirement Suitability'] = df_selected[selected_vars].mean(axis=1)
@@ -151,7 +153,7 @@ if selected_vars:
 
 
     fig_scatter = px.scatter(
-        df_selected, 
+        df_selected[~df_selected["Has_Missing_Data"]],  # Exclude incomplete data by default
         x="Retirement Suitability", 
         y="Col_2025", 
         text="Country", 
@@ -167,34 +169,35 @@ if selected_vars:
         hover_data=hover_data_adjusted
     )
 
+
 # Add red border circles for missing data points
     # Ensure red circles follow continent filtering
-    incomplete_data = df_selected[
-        (df_selected['Valid_Var_Count'] < len(selected_vars)) &
-        (df_selected['Continent'].isin(df_selected['Continent'].unique()))
-    ]
+    incomplete_data = df_selected[df_selected["Has_Missing_Data"]]
+
 
     # Add red border circles for countries with missing data
     if not incomplete_data.empty:
         highlight_trace = px.scatter(
-            incomplete_data,
+            incomplete_data,  # Use incomplete data only
             x="Retirement Suitability",
             y="Col_2025",
             text="Country",
+            color_discrete_sequence=["red"],  # Force red color
             hover_data=hover_data_adjusted
         ).data[0]
 
         # Modify marker properties for empty red circles
-        highlight_trace.marker.symbol = "circle-open"  # Ensures the empty red circle
+        highlight_trace.marker.symbol = "circle-open"  # Empty red circle
         highlight_trace.marker.size = 15
         highlight_trace.marker.line.width = 2
-        highlight_trace.marker.color = "red"
-        highlight_trace.name = "Incomplete Data"  # Custom name in legend instead of "NA"
+        highlight_trace.name = "Incomplete Data"  # Custom name in legend
 
         fig_scatter.add_trace(highlight_trace)
 
+
         # Ensure "Incomplete Data" appears as a clickable legend entry
-        fig_scatter.update_traces(selector=dict(name="Incomplete Data"), showlegend=True)
+        fig_scatter.update_traces(selector=dict(name="Incomplete Data"), visible="legendonly")
+
 
 
 
