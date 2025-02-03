@@ -31,6 +31,7 @@ column_mapping = {
 }
 data = data.rename(columns=column_mapping)
 
+
 # Define country-to-continent mapping
 continent_mapping = {
     'United States': 'America', 'Canada': 'America', 'Mexico': 'America', 'Brazil': 'America',
@@ -79,11 +80,13 @@ for label in variables:
         selected_vars.append(label)
 
 if selected_vars:
-    df_selected = data[['Country', 'Col_2025', 'Continent', 'Retirement Suitability', 'Has_Incomplete_Data'] + selected_vars].copy()
-    df_selected[selected_vars] = df_selected[selected_vars].astype(str).replace('nan', 'NA')
+    existing_columns = ['Country', 'Col_2025', 'Continent', 'Retirement Suitability', 'Has_Incomplete_Data']
+    valid_selected_vars = [var for var in selected_vars if var in data.columns]
+    df_selected = data[existing_columns + valid_selected_vars].copy()
+    df_selected[valid_selected_vars] = df_selected[valid_selected_vars].astype(str).replace('nan', 'NA')
     
     # Apply filters based on slider values
-    for var in selected_vars:
+    for var in valid_selected_vars:
         max_category = sliders[var]
         df_selected = df_selected[df_selected[var].astype(str) <= str(max_category)]
     
@@ -101,7 +104,7 @@ if selected_vars:
         },
         template="plotly_dark", 
         category_orders={"Continent": ["America", "Europe", "Asia", "Africa", "Oceania"]},
-        hover_data={var: True for var in selected_vars},
+        hover_data={var: True for var in valid_selected_vars},
         size_max=15
     )
 
@@ -112,16 +115,16 @@ if selected_vars:
                 x=[row['Retirement Suitability']],
                 y=[row['Col_2025']],
                 mode='markers',
-                marker=dict(symbol='circle-open', color='red', size=17, line=dict(width=3)),
+                marker=dict(symbol='circle-open', color='red', size=18, line=dict(width=2)),
                 name='Incomplete Data',
                 showlegend=False
             ))
 
-    # Add legend for incomplete data
+    # Add proper legend for incomplete data
     fig_scatter.add_trace(go.Scatter(
         x=[None], y=[None],
         mode='markers',
-        marker=dict(symbol='circle-open', color='red', size=17, line=dict(width=3)),
+        marker=dict(symbol='circle-open', color='red', size=18, line=dict(width=2)),
         name='Incomplete Data'
     ))
 
@@ -137,7 +140,7 @@ if selected_vars:
 
     # Map Visualization
     st.write("### Understand the spatial distribution of the variables that make up the Retirement Suitability")
-    selected_map_var = st.selectbox("", selected_vars)
+    selected_map_var = st.selectbox("", valid_selected_vars)
     
     fig_map = px.choropleth(df_selected, locations="Country", locationmode="country names", color=selected_map_var, color_continuous_scale="RdYlGn")
     
