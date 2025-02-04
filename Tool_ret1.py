@@ -128,32 +128,19 @@ if selected_vars:
     # Now create df_selected from the already filtered data
     df_selected['Retirement Suitability'] = df_selected[selected_vars].mean(axis=1)
     
-    # ✅ Preserve selected continents across updates
-    if "continent_selection" not in st.session_state:
-        st.session_state["continent_selection"] = df_selected["Continent"].unique().tolist()  # Store initial selection
     
-    # Ensure selected continents are stored in session state and reapply filters accordingly
-
-    # Check if 'continent_selection' is already in session_state, if not, initialize
     if "continent_selection" not in st.session_state:
-        st.session_state["continent_selection"] = df_selected["Continent"].unique().tolist()  # Initialize with all continents
+        st.session_state["continent_selection"] = df_selected["Continent"].unique().tolist()
     
-    # Ensure selected continents are stored in session state and reapply filters accordingly
-    if "continent_selection" not in st.session_state:
-        st.session_state["continent_selection"] = df_selected["Continent"].unique().tolist()  # Initialize with all continents
-    
-    # Multi-select continent filter, defaults to what's stored in session_state
     selected_continents = st.multiselect(
         "Select Continents to Display", 
         options=df_selected["Continent"].unique().tolist(), 
         default=st.session_state["continent_selection"]
     )
     
-    # Apply the filter so only selected continents are shown
     df_selected = df_selected[df_selected["Continent"].isin(selected_continents)]
-    
-    # Store the selection so it persists across updates
     st.session_state["continent_selection"] = selected_continents
+
 
 
 
@@ -224,23 +211,16 @@ if selected_vars:
 
     fig_scatter.update_traces(marker=dict(size=10), textposition='top center')
 
-    fig_scatter.update_layout(
-        title=dict(text="Retirement Suitability vs Cost of Living", font=dict(color='white', size=24), x=0.5, xanchor="center"),
-        xaxis=dict(linecolor='white', tickfont=dict(color='white'), showgrid=True, gridcolor='rgba(255, 255, 255, 0.3)', gridwidth=1),
-        yaxis=dict(linecolor='white', tickfont=dict(color='white'), showgrid=True, gridcolor='rgba(255, 255, 255, 0.3)', gridwidth=1),
-        legend=dict(font=dict(color="white")),
-        paper_bgcolor='black', plot_bgcolor='black'
-    )
-
     fig_scatter.update_traces(marker=dict(size=10), textposition='top center')
-
     fig_scatter.update_layout(
         title=dict(text="Retirement Suitability vs Cost of Living", font=dict(color='white', size=24), x=0.5, xanchor="center"),
         xaxis=dict(linecolor='white', tickfont=dict(color='white'), showgrid=True, gridcolor='rgba(255, 255, 255, 0.3)', gridwidth=1),
         yaxis=dict(linecolor='white', tickfont=dict(color='white'), showgrid=True, gridcolor='rgba(255, 255, 255, 0.3)', gridwidth=1),
         legend=dict(font=dict(color="white")),
-        paper_bgcolor='black', plot_bgcolor='black'
+        paper_bgcolor='black', 
+        plot_bgcolor='black'
     )
+
 
     st.plotly_chart(fig_scatter, use_container_width=True)
     
