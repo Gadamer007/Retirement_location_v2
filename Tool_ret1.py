@@ -167,41 +167,41 @@ if selected_vars:
         hover_data=hover_data_adjusted
     )
 
-# ✅ Add checkbox to filter for complete data only
-complete_data_only = st.sidebar.checkbox("Countries with complete data only", value=False)
+    # ✅ Add checkbox to filter for complete data only
+    complete_data_only = st.sidebar.checkbox("Countries with complete data only", value=False)
 
-# ✅ Apply checkbox filter
-if complete_data_only:
-    df_selected = df_selected[df_selected['Valid_Var_Count'] == len(selected_vars)]  # Keep only full data rows
+    # ✅ Apply checkbox filter
+    if complete_data_only:
+        df_selected = df_selected[df_selected['Valid_Var_Count'] == len(selected_vars)]  # Keep only full data rows
 
-# ✅ Update scatter plot after filtering
-fig_scatter = px.scatter(
-    df_selected, 
-    x="Retirement Suitability", 
-    y="Col_2025", 
-    text="Country", 
-    color=df_selected['Continent'],
-    title="Retirement Suitability vs Cost of Living", 
-    labels={
-        "Col_2025": "Cost of Living (0 - 100)", 
-        "Retirement Suitability": "Retirement Suitability (0 - 100)"
-    },
-    template="plotly_dark", 
-    category_orders={"Continent": ["America", "Europe", "Asia", "Africa", "Oceania"]},
-    hover_data=hover_data_adjusted
-)
+    # ✅ Update scatter plot after filtering
+    fig_scatter = px.scatter(
+        df_selected, 
+        x="Retirement Suitability", 
+        y="Col_2025", 
+        text="Country", 
+        color=df_selected['Continent'],
+        title="Retirement Suitability vs Cost of Living", 
+        labels={
+            "Col_2025": "Cost of Living (0 - 100)", 
+            "Retirement Suitability": "Retirement Suitability (0 - 100)"
+        },
+        template="plotly_dark", 
+        category_orders={"Continent": ["America", "Europe", "Asia", "Africa", "Oceania"]},
+        hover_data=hover_data_adjusted
+    )
 
-fig_scatter.update_traces(marker=dict(size=10), textposition='top center')
+    fig_scatter.update_traces(marker=dict(size=10), textposition='top center')
 
-fig_scatter.update_layout(
-    title=dict(text="Retirement Suitability vs Cost of Living", font=dict(color='white', size=24), x=0.5, xanchor="center"),
-    xaxis=dict(linecolor='white', tickfont=dict(color='white'), showgrid=True, gridcolor='rgba(255, 255, 255, 0.3)', gridwidth=1),
-    yaxis=dict(linecolor='white', tickfont=dict(color='white'), showgrid=True, gridcolor='rgba(255, 255, 255, 0.3)', gridwidth=1),
-    legend=dict(font=dict(color="white")),
-    paper_bgcolor='black', plot_bgcolor='black'
-)
+    fig_scatter.update_layout(
+        title=dict(text="Retirement Suitability vs Cost of Living", font=dict(color='white', size=24), x=0.5, xanchor="center"),
+        xaxis=dict(linecolor='white', tickfont=dict(color='white'), showgrid=True, gridcolor='rgba(255, 255, 255, 0.3)', gridwidth=1),
+        yaxis=dict(linecolor='white', tickfont=dict(color='white'), showgrid=True, gridcolor='rgba(255, 255, 255, 0.3)', gridwidth=1),
+        legend=dict(font=dict(color="white")),
+        paper_bgcolor='black', plot_bgcolor='black'
+    )
 
-st.plotly_chart(fig_scatter, use_container_width=True)
+    st.plotly_chart(fig_scatter, use_container_width=True)
 
 
 
