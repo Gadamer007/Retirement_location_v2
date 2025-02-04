@@ -174,43 +174,51 @@ fig_scatter = px.scatter(
 
 # Ensure main traces belong to "continent" legend group
 for trace in fig_scatter.data:
-    trace.legendgroup = "continent"  # Assign all original traces to "continent" legend
-    trace.showlegend = True  # Keep them visible
+    trace.legendgroup = "continent"  # Group all country colors under "Continent"
+    trace.showlegend = True
+    trace.legendgrouptitle_text = "Continent"  # Adds title for this legend group
+
 
 # Add a separate trace for incomplete data using "X" marker
 # Define incomplete_data before using it
 incomplete_data = df_selected[df_selected[selected_vars].isna().any(axis=1)]
+# Ensure Data Completeness legend is separate
 if not incomplete_data.empty:
     incomplete_trace = go.Scatter(
         x=incomplete_data["Retirement Suitability"],
         y=incomplete_data["Col_2025"],
         text=incomplete_data["Country"],
         mode="markers",
-        marker=dict(symbol="square-open", size=14, color="black", line=dict(width=2)),  # ✅ Square for incomplete data
+        marker=dict(symbol="square-open", size=14, color="black", line=dict(width=2)),  # Square for incomplete data
         name="Incomplete Data",
-        legendgroup="completeness",
+        legendgroup="data",  # Separate legend for completeness
+        legendgrouptitle_text="Data",  # Creates a separate title for completeness
         showlegend=True
     )
     fig_scatter.add_trace(incomplete_trace)
 
-# Add a separate trace for complete data using a bubble marker
+# Add a separate trace for "Complete Data" using a bubble
 fig_scatter.add_trace(
     go.Scatter(
-        x=[None], y=[None],  # Dummy data for legend entry
+        x=[None], y=[None],  # Dummy entry for legend
         mode='markers',
         marker=dict(symbol="circle", size=12, color="gray"),
         name="Complete Data",
-        legendgroup="completeness",
+        legendgroup="data",  # Same legend group as "Incomplete Data"
         showlegend=True
     )
 )
 
-# Adjust layout for dual legends
+
+# ✅ Ensure both legends are visually separated
 fig_scatter.update_layout(
     title=dict(text="Retirement Suitability vs Cost of Living", font=dict(color='white', size=24), x=0.5, xanchor="center"),
     xaxis=dict(linecolor='white', tickfont=dict(color='white'), showgrid=True, gridcolor='rgba(255, 255, 255, 0.3)', gridwidth=1),
     yaxis=dict(linecolor='white', tickfont=dict(color='white'), showgrid=True, gridcolor='rgba(255, 255, 255, 0.3)', gridwidth=1),
-    legend=dict(font=dict(color="white")),
+    legend=dict(
+        font=dict(color="white"),
+        tracegroupgap=20  # ✅ Adds spacing between the two legend groups
+    ),
     paper_bgcolor='black', plot_bgcolor='black'
 )
 
