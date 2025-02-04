@@ -167,10 +167,13 @@ if selected_vars:
         hover_data=hover_data_adjusted
     )
 
+    # ✅ Add checkbox below the scatter plot
+    complete_data_only = st.checkbox("Show only countries with complete data", value=False)
 
-    # ✅ Apply checkbox filter
+    # ✅ Apply checkbox filter after defining it
     if complete_data_only:
         df_selected = df_selected[df_selected['Valid_Var_Count'] == len(selected_vars)]
+
 
 
     # ✅ Update scatter plot after filtering
