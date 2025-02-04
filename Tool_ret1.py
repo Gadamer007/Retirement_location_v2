@@ -135,7 +135,24 @@ if selected_vars:
 
     df_selected['Retirement Suitability'] = df_selected[selected_vars].mean(axis=1)
 
-    import plotly.graph_objects as go  # Ensure Graph Objects is imported
+import plotly.graph_objects as go  # Ensure Graph Objects is imported
+
+# Define hover_data_adjusted before using it in fig_scatter
+hover_data_adjusted = {}
+
+# Only add selected variables that exist in df_selected to avoid errors
+for var in selected_vars:
+    if var in df_selected.columns:
+        hover_data_adjusted[var] = ':.2f'
+
+# Add Valid_Var_Count to hover data
+hover_data_adjusted["Valid_Var_Count"] = True  
+
+# If Pollution exists, create the inverse for hover display
+if "Pollution" in selected_vars and "Pollution" in df_selected.columns:
+    df_selected["Pollution_Hover"] = 100 - df_selected["Pollution"]  # Invert Pollution values
+    hover_data_adjusted["Pollution_Hover"] = ":.2f"  # Add Pollution_Hover to hover data
+
 
 # Create main scatter plot for continent colors
 fig_scatter = px.scatter(
