@@ -168,7 +168,7 @@ if selected_vars:
     )
 
     # ✅ Add checkbox below the scatter plot
-    complete_data_only = st.checkbox("Show only countries with complete data", value=False)
+    # complete_data_only = st.checkbox("Show only countries with complete data", value=False)
 
     # ✅ Apply checkbox filter after defining it
     if complete_data_only:
