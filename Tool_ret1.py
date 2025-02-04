@@ -199,13 +199,13 @@ fig_scatter.update_layout(
 st.plotly_chart(fig_scatter, use_container_width=True)
 
 
-    # Map Visualization
-    st.write("### Understand the spatial distribution of the variables that make up the Retirement Suitability")
-    selected_map_var = st.selectbox("", selected_vars)
+# Map Visualization
+st.write("### Understand the spatial distribution of the variables that make up the Retirement Suitability")
+selected_map_var = st.selectbox("", selected_vars)
     
-    fig_map = px.choropleth(df_selected, locations="Country", locationmode="country names", color=selected_map_var, color_continuous_scale="RdYlGn")
+fig_map = px.choropleth(df_selected, locations="Country", locationmode="country names", color=selected_map_var, color_continuous_scale="RdYlGn")
     
-    st.plotly_chart(fig_map, use_container_width=True)
+st.plotly_chart(fig_map, use_container_width=True)
 
 
 
