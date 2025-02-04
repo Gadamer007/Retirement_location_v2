@@ -185,10 +185,10 @@ if not incomplete_data.empty:
         x=incomplete_data["Retirement Suitability"],
         y=incomplete_data["Col_2025"],
         text=incomplete_data["Country"],
-        mode="markers+text",
-        marker=dict(symbol="x", size=12, color="black", line=dict(width=2)),
-        name="Incomplete Data",  # Legend name
-        legendgroup="completeness",  # Separate legend
+        mode="markers",
+        marker=dict(symbol="x-thin", size=12, color="black", line=dict(width=2)),  # ✅ Fix here
+        name="Incomplete Data",
+        legendgroup="completeness",
         showlegend=True
     )
     fig_scatter.add_trace(incomplete_trace)
