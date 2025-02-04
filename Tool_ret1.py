@@ -167,12 +167,11 @@ if selected_vars:
         hover_data=hover_data_adjusted
     )
 
-    # ✅ Add checkbox to filter for complete data only
-    complete_data_only = st.sidebar.checkbox("Countries with complete data only", value=False)
 
     # ✅ Apply checkbox filter
     if complete_data_only:
-        df_selected = df_selected[df_selected['Valid_Var_Count'] == len(selected_vars)]  # Keep only full data rows
+        df_selected = df_selected[df_selected['Valid_Var_Count'] == len(selected_vars)]
+
 
     # ✅ Update scatter plot after filtering
     fig_scatter = px.scatter(
@@ -201,11 +200,6 @@ if selected_vars:
         paper_bgcolor='black', plot_bgcolor='black'
     )
 
-    st.plotly_chart(fig_scatter, use_container_width=True)
-
-
-
-
     fig_scatter.update_traces(marker=dict(size=10), textposition='top center')
 
     fig_scatter.update_layout(
@@ -217,13 +211,20 @@ if selected_vars:
     )
 
     st.plotly_chart(fig_scatter, use_container_width=True)
+    complete_data_only = st.checkbox("Show only countries with complete data", value=False)
+
 
     # Map Visualization
     st.write("### Understand the spatial distribution of the variables that make up the Retirement Suitability")
     selected_map_var = st.selectbox("", selected_vars)
     
-    fig_map = px.choropleth(df_selected, locations="Country", locationmode="country names", color=selected_map_var, color_continuous_scale="RdYlGn")
-    
+    fig_map = px.choropleth(
+        df_selected, 
+        locations="Country", 
+        locationmode="country names", 
+        color=selected_map_var, 
+        color_continuous_scale="RdYlGn"
+    )
     st.plotly_chart(fig_map, use_container_width=True)
 
 
