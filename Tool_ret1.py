@@ -186,7 +186,7 @@ if not incomplete_data.empty:
         y=incomplete_data["Col_2025"],
         text=incomplete_data["Country"],
         mode="markers",
-        marker=dict(symbol="x-thin", size=12, color="black", line=dict(width=2)),  # ✅ Fix here
+        marker=dict(symbol="x", size=12, color="black", line=dict(width=2)),  
         name="Incomplete Data",
         legendgroup="completeness",
         showlegend=True
