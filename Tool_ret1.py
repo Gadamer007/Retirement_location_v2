@@ -167,7 +167,7 @@ fig_scatter = px.scatter(
     color="Continent",  # ✅ Color by continent
     symbol="Completeness",  # ✅ Shape based on completeness
     category_orders={"Continent": ["America", "Europe", "Asia", "Africa", "Oceania"],
-                     "Completeness": ["Complete Data", "Incomplete Data"]}  # ✅ Fix legend ordering
+                     "Completeness": ["Complete Data", "Incomplete Data"]},  # ✅ Fix legend ordering
 
     title="Retirement Suitability vs Cost of Living", 
     labels={
