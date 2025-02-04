@@ -134,15 +134,28 @@ if selected_vars:
     if "continent_selection" not in st.session_state:
         st.session_state["continent_selection"] = df_selected["Continent"].unique().tolist()  # Store initial selection
     
-    # ✅ Multi-select continent filter (persists after slider changes)
+    # Ensure selected continents are stored in session state and reapply filters accordingly
+
+    # Check if 'continent_selection' is already in session_state, if not, initialize
+    if "continent_selection" not in st.session_state:
+        st.session_state["continent_selection"] = df_selected["Continent"].unique().tolist()  # Initialize with all continents
+    
+    # Multi-select continent filter, defaults to what's stored in session_state
     selected_continents = st.multiselect(
         "Select Continents to Display", 
         options=df_selected["Continent"].unique().tolist(), 
         default=st.session_state["continent_selection"]
     )
     
-    # ✅ Apply the filter so only selected continents are shown
-    df_selected = df_selected[df_selected["Continent"].isin(selected_continents)]
+    # Check if the selection has changed and update session_state
+    if selected_continents != st.session_state["continent_selection"]:
+        st.session_state["continent_selection"] = selected_continents
+        st.experimental_rerun()  # Force a rerun to apply the updated state
+    
+    # Apply the continent filter
+    df_selected = df_selected[df_selected["Continent"].isin(st.session_state["continent_selection"])]
+
+
     
     # ✅ Store the selection so it persists across updates
     st.session_state["continent_selection"] = selected_continents
