@@ -211,7 +211,7 @@ fig_scatter.add_trace(
 
 
 # Ensure both legends are visually separated
-ffig_scatter.update_layout(
+fig_scatter.update_layout(
     title=dict(text="Retirement Suitability vs Cost of Living", font=dict(color='white', size=24), x=0.5, xanchor="center"),
     xaxis=dict(linecolor='white', tickfont=dict(color='white'), showgrid=True, gridcolor='rgba(255, 255, 255, 0.3)', gridwidth=1),
     yaxis=dict(linecolor='white', tickfont=dict(color='white'), showgrid=True, gridcolor='rgba(255, 255, 255, 0.3)', gridwidth=1),
