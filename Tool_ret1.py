@@ -178,6 +178,8 @@ for trace in fig_scatter.data:
     trace.showlegend = True  # Keep them visible
 
 # Add a separate trace for incomplete data using "X" marker
+# Define incomplete_data before using it
+incomplete_data = df_selected[df_selected[selected_vars].isna().any(axis=1)]
 if not incomplete_data.empty:
     incomplete_trace = go.Scatter(
         x=incomplete_data["Retirement Suitability"],
