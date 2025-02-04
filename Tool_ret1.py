@@ -166,8 +166,10 @@ fig_scatter = px.scatter(
     text="Country", 
     color="Continent",  # ✅ Color by continent
     symbol="Completeness",  # ✅ Shape based on completeness
-    category_orders={"Continent": ["America", "Europe", "Asia", "Africa", "Oceania"],
-                     "Completeness": ["Complete Data", "Incomplete Data"]},  # ✅ Fix legend ordering
+    category_orders={
+        "Continent": ["America", "Europe", "Asia", "Africa", "Oceania"],
+        "Completeness": ["Complete Data", "Incomplete Data"]
+    },  # ✅ FIXED: Now only one category_orders, avoiding duplication!
 
     title="Retirement Suitability vs Cost of Living", 
     labels={
@@ -176,12 +178,12 @@ fig_scatter = px.scatter(
         "Completeness": "Data Availability"
     },
     template="plotly_dark", 
-    category_orders={"Continent": ["America", "Europe", "Asia", "Africa", "Oceania"]},
-    hover_data=hover_data_adjusted
+    hover_data=hover_data_adjusted  # ✅ Kept the hover data, nothing removed
 )
 
+
 # ✅ Update marker styles to make symbols distinct
-fig_scatter.update_traces(marker=dict(size=10, line=dict(width=2)))
+.update_traces(marker=dict(size=10, line=dict(width=2)))
 
 # ✅ Ensure two distinct legends: one for Continent (color), one for Completeness (shape)
 fig_scatter.update_layout(
