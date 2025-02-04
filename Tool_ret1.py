@@ -159,36 +159,44 @@ if "Pollution" in selected_vars and "Pollution" in df_selected.columns:
 df_selected["Completeness"] = np.where(df_selected[selected_vars].isna().any(axis=1), "Incomplete Data", "Complete Data")
 
 # ✅ Create scatter plot with BOTH color (Continent) and symbol (Completeness)
+# ✅ Create the main scatter plot with continent colors
 fig_scatter = px.scatter(
     df_selected, 
     x="Retirement Suitability", 
     y="Col_2025", 
     text="Country", 
-    color="Continent",  
-    symbol="Completeness",  
-    category_orders={
-        "Continent": ["America", "Europe", "Asia", "Africa", "Oceania"],
-        "Completeness": ["Complete Data", "Incomplete Data"]
-    },  
+    color="Continent",  # ✅ Only color by Continent
     title="Retirement Suitability vs Cost of Living", 
     labels={
         "Col_2025": "Cost of Living (0 - 100)", 
-        "Retirement Suitability": "Retirement Suitability (0 - 100)",
-        "Completeness": "Data Availability"
+        "Retirement Suitability": "Retirement Suitability (0 - 100)"
     },
     template="plotly_dark", 
+    category_orders={"Continent": ["America", "Europe", "Asia", "Africa", "Oceania"]},
     hover_data=hover_data_adjusted
 )
 
-# ✅ Correctly apply the update_traces separately
-fig_scatter.update_traces(marker=dict(size=10, line=dict(width=2)))  
+# ✅ Add a separate trace for shape legend (circle = complete, square = incomplete)
+for completeness, shape in [("Complete Data", "circle"), ("Incomplete Data", "square")]:
+    df_subset = df_selected[df_selected["Completeness"] == completeness]
+    fig_scatter.add_trace(
+        go.Scatter(
+            x=df_subset["Retirement Suitability"],
+            y=df_subset["Col_2025"],
+            text=df_subset["Country"],
+            mode="markers",
+            marker=dict(symbol=shape, size=10, color="white", line=dict(width=2)),  # ✅ Separate shape
+            name=completeness,  # ✅ Legend for completeness only
+            legendgroup="data",  # ✅ Separate legend group
+            showlegend=True
+        )
+    )
 
-
-# ✅ Ensure two distinct legends: one for Continent (color), one for Completeness (shape)
+# ✅ Format legend properly
 fig_scatter.update_layout(
     legend=dict(
         font=dict(color="white"),
-        tracegroupgap=20,  # ✅ Adds spacing between the two legend groups
+        tracegroupgap=20,  # ✅ Adds spacing between continent and data legend
     ),
     legend_title=dict(
         text="Legend",  # ✅ Titles the whole legend properly
@@ -202,8 +210,7 @@ fig_scatter.update_layout(
     plot_bgcolor='black'
 )
 
-
-# Display the plot
+# ✅ Display the plot
 st.plotly_chart(fig_scatter, use_container_width=True)
 
 
