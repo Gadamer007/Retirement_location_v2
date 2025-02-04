@@ -3,6 +3,7 @@ import pandas as pd
 import plotly.express as px
 import numpy as np
 import requests
+import plotly.graph_objects as go  # Ensure Graph Objects is imported
 from io import BytesIO
 
 # Load dataset
@@ -134,81 +135,69 @@ if selected_vars:
 
     df_selected['Retirement Suitability'] = df_selected[selected_vars].mean(axis=1)
 
-    # Scatter Plot
-    # Ensure we do not modify the original DataFrame
-    df_selected = df_selected.copy()
+    import plotly.graph_objects as go  # Ensure Graph Objects is imported
 
-    # If Pollution is in selected variables, create the inverse for hover display
-    if "Pollution" in selected_vars:
-        df_selected["Pollution_Hover"] = 100 - df_selected["Pollution"]  # Invert Pollution values
+# Create main scatter plot for continent colors
+fig_scatter = px.scatter(
+    df_selected, 
+    x="Retirement Suitability", 
+    y="Col_2025", 
+    text="Country", 
+    color=df_selected['Continent'],
+    title="Retirement Suitability vs Cost of Living", 
+    labels={
+        "Col_2025": "Cost of Living (0 - 100)", 
+        "Retirement Suitability": "Retirement Suitability (0 - 100)",
+        "Pollution_Hover": "Pollution"
+    },
+    template="plotly_dark", 
+    category_orders={"Continent": ["America", "Europe", "Asia", "Africa", "Oceania"]},
+    hover_data=hover_data_adjusted
+)
 
-    # Update hover data mapping
-    hover_data_adjusted = {var: ':.2f' for var in selected_vars}
-    hover_data_adjusted["Valid_Var_Count"] = True  # Show count of available variables
+# Ensure main traces belong to "continent" legend group
+for trace in fig_scatter.data:
+    trace.legendgroup = "continent"  # Assign all original traces to "continent" legend
+    trace.showlegend = True  # Keep them visible
 
-    # Ensure missing values are displayed as "NA"
-    df_selected = df_selected.fillna("NA")  
-
-
-    fig_scatter = px.scatter(
-        df_selected, 
-        x="Retirement Suitability", 
-        y="Col_2025", 
-        text="Country", 
-        color=df_selected['Continent'],
-        title="Retirement Suitability vs Cost of Living", 
-        labels={
-            "Col_2025": "Cost of Living (0 - 100)", 
-            "Retirement Suitability": "Retirement Suitability (0 - 100)",
-            "Pollution_Hover": "Pollution"
-        },
-        template="plotly_dark", 
-        category_orders={"Continent": ["America", "Europe", "Asia", "Africa", "Oceania"]},
-        hover_data=hover_data_adjusted
+# Add a separate trace for incomplete data using "X" marker
+if not incomplete_data.empty:
+    incomplete_trace = go.Scatter(
+        x=incomplete_data["Retirement Suitability"],
+        y=incomplete_data["Col_2025"],
+        text=incomplete_data["Country"],
+        mode="markers+text",
+        marker=dict(symbol="x", size=12, color="black", line=dict(width=2)),
+        name="Incomplete Data",  # Legend name
+        legendgroup="completeness",  # Separate legend
+        showlegend=True
     )
+    fig_scatter.add_trace(incomplete_trace)
 
-# Add red border circles for missing data points
-    # Ensure red circles follow continent filtering
-    incomplete_data = df_selected[
-        (df_selected['Valid_Var_Count'] < len(selected_vars)) &
-        (df_selected['Continent'].isin(df_selected['Continent'].unique()))
-    ]
-
-    # Add red border circles for countries with missing data
-    if not incomplete_data.empty:
-        highlight_trace = px.scatter(
-            incomplete_data,
-            x="Retirement Suitability",
-            y="Col_2025",
-            text="Country",
-            hover_data=hover_data_adjusted
-        ).data[0]
-
-        # Modify marker properties for empty red circles
-        highlight_trace.marker.symbol = "circle-open"  # Ensures the empty red circle
-        highlight_trace.marker.size = 15
-        highlight_trace.marker.line.width = 2
-        highlight_trace.marker.color = "red"
-        highlight_trace.name = "Incomplete Data"  # Custom name in legend instead of "NA"
-
-        fig_scatter.add_trace(highlight_trace)
-
-        # Ensure "Incomplete Data" appears as a clickable legend entry
-        fig_scatter.update_traces(selector=dict(name="Incomplete Data"), showlegend=True)
-
-
-
-    fig_scatter.update_traces(marker=dict(size=10), textposition='top center')
-
-    fig_scatter.update_layout(
-        title=dict(text="Retirement Suitability vs Cost of Living", font=dict(color='white', size=24), x=0.5, xanchor="center"),
-        xaxis=dict(linecolor='white', tickfont=dict(color='white'), showgrid=True, gridcolor='rgba(255, 255, 255, 0.3)', gridwidth=1),
-        yaxis=dict(linecolor='white', tickfont=dict(color='white'), showgrid=True, gridcolor='rgba(255, 255, 255, 0.3)', gridwidth=1),
-        legend=dict(font=dict(color="white")),
-        paper_bgcolor='black', plot_bgcolor='black'
+# Add a separate trace for complete data using a bubble marker
+fig_scatter.add_trace(
+    go.Scatter(
+        x=[None], y=[None],  # Dummy data for legend entry
+        mode='markers',
+        marker=dict(symbol="o", size=12, color="gray"),
+        name="Complete Data",
+        legendgroup="completeness",
+        showlegend=True
     )
+)
 
-    st.plotly_chart(fig_scatter, use_container_width=True)
+# Adjust layout for dual legends
+fig_scatter.update_layout(
+    title=dict(text="Retirement Suitability vs Cost of Living", font=dict(color='white', size=24), x=0.5, xanchor="center"),
+    xaxis=dict(linecolor='white', tickfont=dict(color='white'), showgrid=True, gridcolor='rgba(255, 255, 255, 0.3)', gridwidth=1),
+    yaxis=dict(linecolor='white', tickfont=dict(color='white'), showgrid=True, gridcolor='rgba(255, 255, 255, 0.3)', gridwidth=1),
+    legend=dict(font=dict(color="white")),
+    paper_bgcolor='black', plot_bgcolor='black'
+)
+
+# Display the plot
+st.plotly_chart(fig_scatter, use_container_width=True)
+
 
     # Map Visualization
     st.write("### Understand the spatial distribution of the variables that make up the Retirement Suitability")
