@@ -128,9 +128,24 @@ if selected_vars:
     # Now create df_selected from the already filtered data
     df_selected = df_filtered[['Country', 'Col_2025', 'Continent'] + selected_vars].copy()
     df_selected['Valid_Var_Count'] = df_selected[selected_vars].count(axis=1)
-    df_selected['Retirement Suitability'] = df_selected[selected_vars].sum(axis=1) / df_selected['Valid_Var_Count']
-
-
+    df_selected['Retirement Suitability'] = df_selected[selected_vars].mean(axis=1)
+    
+    # ✅ Preserve selected continents across updates
+    if "continent_selection" not in st.session_state:
+        st.session_state["continent_selection"] = df_selected["Continent"].unique().tolist()  # Store initial selection
+    
+    # ✅ Multi-select continent filter (persists after slider changes)
+    selected_continents = st.multiselect(
+        "Select Continents to Display", 
+        options=df_selected["Continent"].unique().tolist(), 
+        default=st.session_state["continent_selection"]
+    )
+    
+    # ✅ Apply the filter so only selected continents are shown
+    df_selected = df_selected[df_selected["Continent"].isin(selected_continents)]
+    
+    # ✅ Store the selection so it persists across updates
+    st.session_state["continent_selection"] = selected_continents
 
     df_selected['Retirement Suitability'] = df_selected[selected_vars].mean(axis=1)
 
