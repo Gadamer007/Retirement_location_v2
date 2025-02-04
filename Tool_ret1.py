@@ -176,7 +176,7 @@ fig_scatter = px.scatter(
 for trace in fig_scatter.data:
     trace.legendgroup = "continent"  # Group all country colors under "Continent"
     trace.showlegend = True
-    trace.legendgrouptitle_text = "Continent"  # Adds title for this legend group
+
 
 
 # Add a separate trace for incomplete data using "X" marker
@@ -210,14 +210,15 @@ fig_scatter.add_trace(
 )
 
 
-# ✅ Ensure both legends are visually separated
-fig_scatter.update_layout(
+# Ensure both legends are visually separated
+ffig_scatter.update_layout(
     title=dict(text="Retirement Suitability vs Cost of Living", font=dict(color='white', size=24), x=0.5, xanchor="center"),
     xaxis=dict(linecolor='white', tickfont=dict(color='white'), showgrid=True, gridcolor='rgba(255, 255, 255, 0.3)', gridwidth=1),
     yaxis=dict(linecolor='white', tickfont=dict(color='white'), showgrid=True, gridcolor='rgba(255, 255, 255, 0.3)', gridwidth=1),
     legend=dict(
         font=dict(color="white"),
-        tracegroupgap=20  # ✅ Adds spacing between the two legend groups
+        tracegroupgap=20,  # Adds spacing between legend groups
+        title_text="Legend"  #  Sets a general title for the legend
     ),
     paper_bgcolor='black', plot_bgcolor='black'
 )
