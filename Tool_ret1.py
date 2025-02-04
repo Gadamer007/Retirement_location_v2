@@ -155,73 +155,52 @@ if "Pollution" in selected_vars and "Pollution" in df_selected.columns:
 
 
 # Create main scatter plot for continent colors
+# ✅ Define symbol mapping for completeness
+df_selected["Completeness"] = np.where(df_selected[selected_vars].isna().any(axis=1), "Incomplete Data", "Complete Data")
+
+# ✅ Create scatter plot with BOTH color (Continent) and symbol (Completeness)
 fig_scatter = px.scatter(
     df_selected, 
     x="Retirement Suitability", 
     y="Col_2025", 
     text="Country", 
-    color=df_selected['Continent'],
+    color="Continent",  # ✅ Color by continent
+    symbol="Completeness",  # ✅ Shape based on completeness
+    category_orders={"Continent": ["America", "Europe", "Asia", "Africa", "Oceania"],
+                     "Completeness": ["Complete Data", "Incomplete Data"]}  # ✅ Fix legend ordering
+
     title="Retirement Suitability vs Cost of Living", 
     labels={
         "Col_2025": "Cost of Living (0 - 100)", 
         "Retirement Suitability": "Retirement Suitability (0 - 100)",
-        "Pollution_Hover": "Pollution"
+        "Completeness": "Data Availability"
     },
     template="plotly_dark", 
     category_orders={"Continent": ["America", "Europe", "Asia", "Africa", "Oceania"]},
     hover_data=hover_data_adjusted
 )
 
-# Ensure main traces belong to "continent" legend group
-for trace in fig_scatter.data:
-    trace.legendgroup = "continent"  # Group all country colors under "Continent"
-    trace.showlegend = True
+# ✅ Update marker styles to make symbols distinct
+fig_scatter.update_traces(marker=dict(size=10, line=dict(width=2)))
 
-
-
-# Add a separate trace for incomplete data using "X" marker
-# Define incomplete_data before using it
-incomplete_data = df_selected[df_selected[selected_vars].isna().any(axis=1)]
-# Ensure Data Completeness legend is separate
-if not incomplete_data.empty:
-    incomplete_trace = go.Scatter(
-        x=incomplete_data["Retirement Suitability"],
-        y=incomplete_data["Col_2025"],
-        text=incomplete_data["Country"],
-        mode="markers",
-        marker=dict(symbol="square-open", size=14, color="black", line=dict(width=2)),  # Square for incomplete data
-        name="Incomplete Data",
-        legendgroup="data",  # Separate legend for completeness
-        legendgrouptitle_text="Data",  # Creates a separate title for completeness
-        showlegend=True
-    )
-    fig_scatter.add_trace(incomplete_trace)
-
-# Add a separate trace for "Complete Data" using a bubble
-fig_scatter.add_trace(
-    go.Scatter(
-        x=[None], y=[None],  # Dummy entry for legend
-        mode='markers',
-        marker=dict(symbol="circle", size=12, color="gray"),
-        name="Complete Data",
-        legendgroup="data",  # Same legend group as "Incomplete Data"
-        showlegend=True
-    )
-)
-
-
-# Ensure both legends are visually separated
+# ✅ Ensure two distinct legends: one for Continent (color), one for Completeness (shape)
 fig_scatter.update_layout(
-    title=dict(text="Retirement Suitability vs Cost of Living", font=dict(color='white', size=24), x=0.5, xanchor="center"),
-    xaxis=dict(linecolor='white', tickfont=dict(color='white'), showgrid=True, gridcolor='rgba(255, 255, 255, 0.3)', gridwidth=1),
-    yaxis=dict(linecolor='white', tickfont=dict(color='white'), showgrid=True, gridcolor='rgba(255, 255, 255, 0.3)', gridwidth=1),
     legend=dict(
         font=dict(color="white"),
-        tracegroupgap=20,  # Adds spacing between legend groups
-        title_text="Legend"  #  Sets a general title for the legend
+        tracegroupgap=20,  # ✅ Adds spacing between the two legend groups
     ),
-    paper_bgcolor='black', plot_bgcolor='black'
+    legend_title=dict(
+        text="Legend",  # ✅ Titles the whole legend properly
+        font=dict(color="white")
+    ),
+    xaxis=dict(linecolor='white', tickfont=dict(color='white'), showgrid=True, 
+               gridcolor='rgba(255, 255, 255, 0.3)', gridwidth=1),
+    yaxis=dict(linecolor='white', tickfont=dict(color='white'), showgrid=True, 
+               gridcolor='rgba(255, 255, 255, 0.3)', gridwidth=1),
+    paper_bgcolor='black', 
+    plot_bgcolor='black'
 )
+
 
 # Display the plot
 st.plotly_chart(fig_scatter, use_container_width=True)
