@@ -186,7 +186,7 @@ if not incomplete_data.empty:
         y=incomplete_data["Col_2025"],
         text=incomplete_data["Country"],
         mode="markers",
-        marker=dict(symbol="x", size=12, color="black", line=dict(width=2)),  
+        marker=dict(symbol="square-open", size=14, color="black", line=dict(width=2)),  # ✅ Square for incomplete data
         name="Incomplete Data",
         legendgroup="completeness",
         showlegend=True
@@ -198,7 +198,7 @@ fig_scatter.add_trace(
     go.Scatter(
         x=[None], y=[None],  # Dummy data for legend entry
         mode='markers',
-        marker=dict(symbol="o", size=12, color="gray"),
+        marker=dict(symbol="circle", size=12, color="gray"),
         name="Complete Data",
         legendgroup="completeness",
         showlegend=True
