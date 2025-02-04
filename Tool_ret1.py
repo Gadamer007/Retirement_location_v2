@@ -218,17 +218,33 @@ if selected_vars:
 
 
     # Map Visualization
+    # Map Visualization
     st.write("### Understand the spatial distribution of the variables that make up the Retirement Suitability")
     selected_map_var = st.selectbox("", selected_vars)
+
+    # Ensure selected variable is numeric and handle missing values
+    df_selected[selected_map_var] = pd.to_numeric(df_selected[selected_map_var], errors='coerce')
+    df_selected[selected_map_var].fillna(df_selected[selected_map_var].median(), inplace=True)
     
+    # Generate the choropleth map
     fig_map = px.choropleth(
         df_selected, 
         locations="Country", 
         locationmode="country names", 
         color=selected_map_var, 
-        color_continuous_scale="RdYlGn"
+        color_continuous_scale="RdYlGn",
+        title=f"{selected_map_var} by Country",
+        labels={selected_map_var: selected_map_var}  # Ensures label is correct
     )
+    
+    # Format the layout for a consistent display
+    fig_map.update_layout(
+        geo=dict(showframe=False, showcoastlines=True),
+        coloraxis_colorbar=dict(title=selected_map_var)
+    )
+    
     st.plotly_chart(fig_map, use_container_width=True)
+
 
 
 
