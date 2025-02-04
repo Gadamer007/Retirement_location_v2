@@ -126,8 +126,6 @@ if selected_vars:
             df_filtered = df_filtered[df_filtered[category_col].astype(float) <= max_category]  
 
     # Now create df_selected from the already filtered data
-    df_selected = df_filtered[['Country', 'Col_2025', 'Continent'] + selected_vars].copy()
-    df_selected['Valid_Var_Count'] = df_selected[selected_vars].count(axis=1)
     df_selected['Retirement Suitability'] = df_selected[selected_vars].mean(axis=1)
     
     # ✅ Preserve selected continents across updates
@@ -140,6 +138,10 @@ if selected_vars:
     if "continent_selection" not in st.session_state:
         st.session_state["continent_selection"] = df_selected["Continent"].unique().tolist()  # Initialize with all continents
     
+    # Ensure selected continents are stored in session state and reapply filters accordingly
+    if "continent_selection" not in st.session_state:
+        st.session_state["continent_selection"] = df_selected["Continent"].unique().tolist()  # Initialize with all continents
+    
     # Multi-select continent filter, defaults to what's stored in session_state
     selected_continents = st.multiselect(
         "Select Continents to Display", 
@@ -147,13 +149,12 @@ if selected_vars:
         default=st.session_state["continent_selection"]
     )
     
-    # Check if the selection has changed and update session_state
-    if selected_continents != st.session_state["continent_selection"]:
-        st.session_state["continent_selection"] = selected_continents
-        st.experimental_rerun()  # Force a rerun to apply the updated state
+    # Apply the filter so only selected continents are shown
+    df_selected = df_selected[df_selected["Continent"].isin(selected_continents)]
     
-    # Apply the continent filter
-    df_selected = df_selected[df_selected["Continent"].isin(st.session_state["continent_selection"])]
+    # Store the selection so it persists across updates
+    st.session_state["continent_selection"] = selected_continents
+
 
 
     
