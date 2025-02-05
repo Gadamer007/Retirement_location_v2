@@ -20,6 +20,11 @@ def load_data():
 
 # Load the data
 data = load_data()
+
+# DEBUG: Check column names before renaming
+st.write("### Debug: Columns in Raw Data")
+st.write(data.columns.tolist())  # Print to verify column names before renaming
+
 data['Country'] = data['Country'].str.strip().str.title()
 
 # Standardize column names
@@ -36,6 +41,11 @@ column_mapping = {
 }
 
 data = data.rename(columns=column_mapping)
+
+# DEBUG: Check column names after renaming
+st.write("### Debug: Columns in Data After Renaming")
+st.write(data.columns.tolist())  # Print to verify correct renaming
+
 
 # Define country-to-continent mapping
 continent_mapping = {
@@ -106,6 +116,12 @@ def categorize_percentiles(df, variables):
 
 data = categorize_percentiles(data, list(column_mapping.values()))
 
+# DEBUG: Check if category columns exist
+for var in column_mapping.values():
+    if f"{var}_Category" not in data.columns:
+        st.write(f"⚠️ WARNING: {var}_Category is missing! Check if categorization ran correctly.")
+
+
 # Check if categories were created
 for var in column_mapping.values():
     if f"{var}_Category" not in data.columns:
@@ -164,7 +180,15 @@ if selected_vars:
         print("ERROR: 'Col_2025' is missing from the dataset!")
 
     available_vars = [var for var in selected_vars if var in df_filtered.columns]
+    # Ensure selected variables exist in df_filtered
+    available_vars = [var for var in selected_vars if var in df_filtered.columns]
     df_selected = df_filtered[['Country', 'Continent'] + available_vars].copy()
+    
+    # DEBUG: Print missing variables
+    missing_vars = [var for var in selected_vars if var not in df_filtered.columns]
+    if missing_vars:
+        st.write(f"⚠️ WARNING: The following variables were not found in the dataset: {missing_vars}")
+
 
     df_selected['Valid_Var_Count'] = df_selected[selected_vars].count(axis=1)
     df_selected['Retirement Suitability'] = df_selected[selected_vars].mean(axis=1)
