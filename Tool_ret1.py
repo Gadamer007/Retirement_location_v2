@@ -199,16 +199,18 @@ df_selected = df_selected[df_selected["Continent"].isin(selected_continents)]
 # Ensure correct hover data references to _Category columns
 hover_data_adjusted = {f"{var}_Category": ':.2f' for var in selected_vars if f"{var}_Category" in df_selected.columns}
 
-# Fix hover data: Show actual values, and display "N/A" for missing values
+# Fix hover data: Show actual values, ensuring no duplicates
 hover_data_adjusted = {
     "Continent": True,  # Ensure Continent appears first
     "Country": True,  # Then Country
     "Retirement Suitability": ':.2f'  # Round suitability score
 }
 
-# Add real values (0-100) for selected variables
+# Add real values (0-100) for selected variables, ensuring no duplicates
 for var in real_value_vars:
-    hover_data_adjusted[var] = df_selected[var].apply(lambda x: f"{x:.2f}" if pd.notna(x) else "N/A")
+    if var in df_selected.columns:  # Ensure it's already in df_selected to prevent conflicts
+        hover_data_adjusted[var] = ':.2f'
+
 
 
 fig_scatter = px.scatter(
