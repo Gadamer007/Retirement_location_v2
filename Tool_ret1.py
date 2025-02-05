@@ -28,8 +28,13 @@ column_mapping = {
     "Healthcare_2025": "Healthcare",
     "Political stability_2023": "Political Stability",
     "Pollution_2025": "Pollution",
-    "Climate_2025": "Climate"
+    "Climate_2025": "Climate",
+    "English_2024": "English Proficiency",
+    "Openness_2024": "Openness",
+    "Scenery_2024": "Natural Scenery",
+    "Disaster_2024": "Natural Disaster"
 }
+
 data = data.rename(columns=column_mapping)
 
 # Define country-to-continent mapping
@@ -67,10 +72,28 @@ def categorize_percentiles(df, variables):
     for var in variables:
         if var in df.columns:
             if var == "Pollution":
-                # Invert Pollution so lower values are better
                 df[f"{var}_Category"] = pd.qcut(
                     df[var].rank(method='min', ascending=False, na_option='bottom'),
-                    5, labels=[5, 4, 3, 2, 1]  # 1 = Cleanest, 5 = Most Polluted
+                    5, labels=[5, 4, 3, 2, 1]  # 1 = Best, 5 = Worst
+                )
+            elif var == "English Proficiency":
+                english_mapping = {
+                    "Very high proficiency": 1,
+                    "High proficiency": 2,
+                    "Moderate proficiency": 3,
+                    "Low proficiency": 4,
+                    "Very low proficiency": 5
+                }
+                df[f"{var}_Category"] = df[var].map(english_mapping)
+            elif var in ["Openness", "Natural Scenery"]:
+                df[f"{var}_Category"] = pd.qcut(
+                    df[var].rank(method='first', ascending=True, na_option='bottom'),
+                    5, labels=[1, 2, 3, 4, 5]  # 1 = Best, 5 = Worst
+                )
+            elif var == "Natural Disaster":
+                df[f"{var}_Category"] = pd.qcut(
+                    df[var].rank(method='first', ascending=False, na_option='bottom'),
+                    5, labels=[1, 2, 3, 4, 5]  # 1 = Best (Safest), 5 = Worst
                 )
             else:
                 df[f"{var}_Category"] = pd.qcut(
@@ -78,6 +101,7 @@ def categorize_percentiles(df, variables):
                     5, labels=[5, 4, 3, 2, 1]  # 1 = Best, 5 = Worst
                 )
     return df
+
 
 data = categorize_percentiles(data, list(column_mapping.values()))
 
@@ -110,7 +134,11 @@ variables = list(column_mapping.values())
 
 for label in variables:
     if st.sidebar.checkbox(label, value=True):
-        sliders[label] = st.sidebar.slider(f"{label}", 1, 5, 5, format=None)
+        sliders[label] = st.sidebar.slider(
+            f"{label}", 
+            1, 5, 5, 
+            format=None
+        )
         selected_vars.append(label)
 
 if selected_vars:
@@ -121,9 +149,9 @@ if selected_vars:
     for var in selected_vars:
         max_category = sliders[var]  
         category_col = f"{var}_Category"
-    
+
         if category_col in df_filtered.columns:
-            df_filtered = df_filtered[df_filtered[category_col].astype(float) <= max_category]  
+            df_filtered = df_filtered[df_filtered[category_col].astype(float) <= max_category]
 
     # Now create df_selected from the already filtered data
     df_selected = df_filtered[['Country', 'Col_2025', 'Continent'] + selected_vars].copy()
@@ -247,10 +275,11 @@ if selected_vars:
         locations="Country", 
         locationmode="country names", 
         color=selected_map_var, 
-        color_continuous_scale="RdYlGn",
+        color_continuous_scale="RdYlGn_r" if selected_map_var == "Natural Disaster" else "RdYlGn",
         title=f"{selected_map_var} by Country",
-        labels={selected_map_var: selected_map_var}  # Ensures label is correct
+        labels={selected_map_var: selected_map_var}
     )
+
     
     # Format the layout for a consistent display
     fig_map.update_layout(
