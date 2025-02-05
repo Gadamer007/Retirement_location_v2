@@ -145,18 +145,24 @@ for var in selected_vars:
     category_col = f"{var}_Category"
     df_filtered = df_filtered[df_filtered[category_col].astype(int) <= max_category]
 
-# Ensure selected variables exist
-available_vars = [var for var in selected_vars if f"{var}_Category" in df_filtered.columns]
+# Ensure selected variables exist and retrieve their actual values (0-100)
+real_value_vars = [var for var in selected_vars if var in data.columns]
 
-if not available_vars:
+if not real_value_vars:
     st.error("⚠️ No valid variables after filtering. Adjust your selections.")
     st.stop()
 
-# Ensure we get the real values of the selected variables
-real_value_vars = [var for var in selected_vars if var in data.columns]
-
-# Create df_selected including actual values instead of just categories
+# Create df_selected using real values, not just categories
 df_selected = df_filtered[['Country', 'Cost of Living', 'Continent']].copy()
+
+# Add selected variables' real values (0-100)
+for var in real_value_vars:
+    if var in data.columns:
+        df_selected[var] = data[var]  # Store real values instead of categories
+
+# Compute Retirement Suitability Score using actual values
+df_selected['Retirement Suitability'] = df_selected[real_value_vars].mean(axis=1)
+
 
 # Add the selected variables' real values (0-100) to the dataframe
 for var in real_value_vars:
@@ -196,6 +202,9 @@ hover_data_adjusted = {f"{var}_Category": ':.2f' for var in selected_vars if f"{
 # Update hover data to show actual values instead of 1-5 categories
 hover_data_adjusted = {var: ':.2f' for var in real_value_vars}
 
+# Fix hover data: Use real values (0-100), not categories
+hover_data_adjusted = {var: ':.2f' for var in real_value_vars}
+
 fig_scatter = px.scatter(
     df_selected, 
     x="Retirement Suitability",  # ✅ Uses real values (0-100), not rank categories
@@ -211,6 +220,7 @@ fig_scatter = px.scatter(
     category_orders={"Continent": ["America", "Europe", "Asia", "Africa", "Oceania"]},
     hover_data=hover_data_adjusted  # ✅ Shows actual values in hover
 )
+
 
 
 
