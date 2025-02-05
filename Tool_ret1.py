@@ -182,7 +182,7 @@ if not real_value_vars:
     st.stop()
 
 # Compute Retirement Suitability Score using actual values
-df_selected['Retirement Suitability'] = df_selected[real_value_vars].astype(float).mean(axis=1).round(2)
+df_selected['Retirement Suitability'] = df_selected[real_value_vars].astype(float).mean(axis=1)
 
 
 
@@ -199,22 +199,11 @@ df_selected = df_selected[df_selected["Continent"].isin(selected_continents)]
 # Ensure correct hover data references to _Category columns
 hover_data_adjusted = {f"{var}_Category": ':.2f' for var in selected_vars if f"{var}_Category" in df_selected.columns}
 
+# Update hover data to show actual values instead of 1-5 categories
+hover_data_adjusted = {var: ':.2f' for var in real_value_vars}
 
-# Ensure Continent appears first, then Country, then Retirement Suitability with 2 decimals
-hover_data_adjusted = {
-    "Continent": True,  # Always show continent first
-    "Country": True,     # Show country right after
-    "Retirement Suitability": ':.2f'  # Round to 2 decimals in hover
-}
-
-# Add real values (0-100) for selected variables, handling English Proficiency separately
-for var in real_value_vars:
-    if var == "English Proficiency":
-        hover_data_adjusted[var] = True  # Display as-is, since it's already mapped to 100-20
-    else:
-        hover_data_adjusted[var] = ':.2f'  # Format to 2 decimals
-
-
+# Fix hover data: Use real values (0-100), not categories
+hover_data_adjusted = {var: ':.2f' for var in real_value_vars}
 
 fig_scatter = px.scatter(
     df_selected, 
@@ -245,8 +234,6 @@ fig_scatter.update_layout(
 )
 
 st.plotly_chart(fig_scatter, use_container_width=True)
-
-
 
 
 
