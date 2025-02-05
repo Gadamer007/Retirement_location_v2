@@ -88,10 +88,11 @@ def categorize_percentiles(df, variables):
                     )
             else:
                 # If not enough unique values, create a simple rank category
-                df[f"{var}_Category"] = pd.cut(
-                    df[var].rank(method='min', ascending=True),
-                    bins=5, labels=[1, 2, 3, 4, 5], duplicates="drop"
+                df[f"{var}_Category"] = pd.qcut(
+                    df[var].rank(method='min', ascending=True, na_option='bottom'),
+                    q=5, labels=[5, 4, 3, 2, 1], duplicates="drop"
                 )
+
     return df
 
 
