@@ -56,6 +56,7 @@ data['Continent'] = data['Country'].map(continent_mapping)
 st.title("Best Countries for Early Retirement: Where to Retire Abroad?")
 
 # Sidebar Filters
+# Sidebar Filters
 st.sidebar.subheader("Select Variables for Retirement Suitability")
 selected_vars = []
 sliders = {}
@@ -66,30 +67,37 @@ variables = [
     "English Proficiency", "Openness", "Natural Scenery", "Natural Disaster"
 ]
 
-# Ensure all selected columns are numeric before using them in sliders
+# Function to categorize each variable into 5 percentiles
+def categorize_percentiles(df, variables):
+    for var in variables:
+        if var in df.columns:
+            if var == "Pollution":
+                # Invert Pollution so lower values are better
+                df[f"{var}_Category"] = pd.qcut(
+                    df[var].rank(method='min', ascending=False, na_option='bottom'),
+                    5, labels=[5, 4, 3, 2, 1]  # 1 = Cleanest, 5 = Most Polluted
+                )
+            else:
+                df[f"{var}_Category"] = pd.qcut(
+                    df[var].rank(method='min', ascending=True, na_option='bottom'),
+                    5, labels=[1, 2, 3, 4, 5]  # 1 = Best, 5 = Worst
+                )
+    return df
+
+# Apply rank normalization to the dataset
+data = categorize_percentiles(data, variables)
+
+# Create sidebar checkboxes and sliders using rank categories
 for label in variables:
-    if label in data.columns:
-        # Convert column to numeric and handle NaN values
-        data[label] = pd.to_numeric(data[label], errors='coerce')
-        median_value = data[label].median()
-        data[label] = data[label].fillna(0 if np.isnan(median_value) else median_value)
-
+    category_col = f"{label}_Category"
+    if category_col in data.columns:
         if st.sidebar.checkbox(label, value=True):
-            min_val = data[label].min()
-            max_val = data[label].max()
-
-            # 🔥 Ensure `min_val` < `max_val` to avoid Streamlit errors
-            if min_val == max_val:
-                min_val = 0  # Set default min value
-                max_val = 5  # Set default max value
-
             sliders[label] = st.sidebar.slider(
-                f"{label}",
-                int(min_val),  # Safe min
-                int(max_val),  # Safe max
-                int(max_val)   # Default value
+                f"{label}", 
+                1, 5, 5  # Always use 1-5 scale
             )
             selected_vars.append(label)
+
 
 
 
@@ -99,21 +107,23 @@ if not selected_vars:
     st.stop()
 
 # Start with full dataset
+# Start with full dataset
 df_filtered = data.copy()
 
-# Apply slider filters directly on actual values
+# Apply slider filters based on rank categories
 for var in selected_vars:
-    max_value = sliders[var]
-    df_filtered = df_filtered[df_filtered[var] <= max_value]
+    max_category = sliders[var]
+    category_col = f"{var}_Category"
+    df_filtered = df_filtered[df_filtered[category_col].astype(int) <= max_category]
 
 # Ensure selected variables exist
-available_vars = [var for var in selected_vars if var in df_filtered.columns]
+available_vars = [var for var in selected_vars if f"{var}_Category" in df_filtered.columns]
 
 if not available_vars:
     st.error("⚠️ No valid variables after filtering. Adjust your selections.")
     st.stop()
 
-df_selected = df_filtered[['Country', 'Cost of Living', 'Continent'] + available_vars].copy()
+df_selected = df_filtered[['Country', 'Cost of Living', 'Continent'] + [f"{var}_Category" for var in available_vars]].copy()
 
 # Compute Retirement Suitability Score
 df_selected['Retirement Suitability'] = df_selected[selected_vars].mean(axis=1)
