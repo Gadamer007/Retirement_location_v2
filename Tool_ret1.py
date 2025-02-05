@@ -87,8 +87,19 @@ def categorize_percentiles(df, variables):
 
             # Special handling for English Proficiency (convert categorical 1-5 to meaningful values)
             if var == "English Proficiency":
-                proficiency_mapping = {1: 100, 2: 80, 3: 60, 4: 40, 5: 20}
-                df[var] = df[var].map(proficiency_mapping)
+                proficiency_mapping = {
+                    "Very High Proficiency": 100,
+                    "High Proficiency": 80,
+                    "Moderate Proficiency": 60,
+                    "Low Proficiency": 40,
+                    "Very Low Proficiency": 20
+                }
+    
+                # Ensure English Proficiency is treated as a string before mapping
+                df[var] = df[var].astype(str).str.strip().map(proficiency_mapping)
+            
+                # Fill NaNs in case some values didn't match the mapping
+                df[var] = df[var].fillna(np.nan)  # Ensures NAs stay as NAs
 
             # Try using qcut first, if it fails use cut
             try:
