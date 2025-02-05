@@ -199,7 +199,7 @@ selected_continents = st.multiselect(
 df_selected = df_selected[df_selected["Continent"].isin(selected_continents)]
 
 # Add a checkbox to filter out countries with more than 2 missing values
-exclude_incomplete = st.checkbox("Exclude countries with incomplete data")
+exclude_incomplete = st.checkbox("Exclude countries with incomplete data (more than 2 N/A)")
 
 # Apply the filter if the checkbox is selected
 if exclude_incomplete:
