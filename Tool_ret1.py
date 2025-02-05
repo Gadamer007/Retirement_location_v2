@@ -69,21 +69,28 @@ variables = [
 # Ensure all selected columns are numeric before using them in sliders
 for label in variables:
     if label in data.columns:
-        # Convert column to numeric and replace NaN with median before assigning back
+        # Convert column to numeric and handle NaN values
         data[label] = pd.to_numeric(data[label], errors='coerce')
         median_value = data[label].median()
-
-        # Fill NaNs with median (if median itself is NaN, fill with 0)
         data[label] = data[label].fillna(0 if np.isnan(median_value) else median_value)
 
         if st.sidebar.checkbox(label, value=True):
+            min_val = data[label].min()
+            max_val = data[label].max()
+
+            # 🔥 Ensure `min_val` < `max_val` to avoid Streamlit errors
+            if min_val == max_val:
+                min_val = 0  # Set default min value
+                max_val = 5  # Set default max value
+
             sliders[label] = st.sidebar.slider(
                 f"{label}",
-                int(data[label].min()),  # Convert min value to int safely
-                int(data[label].max()),  # Convert max value to int safely
-                int(data[label].max())   # Default value
+                int(min_val),  # Safe min
+                int(max_val),  # Safe max
+                int(max_val)   # Default value
             )
             selected_vars.append(label)
+
 
 
 
