@@ -152,7 +152,21 @@ if not available_vars:
     st.error("⚠️ No valid variables after filtering. Adjust your selections.")
     st.stop()
 
-df_selected = df_filtered[['Country', 'Cost of Living', 'Continent'] + [f"{var}_Category" for var in available_vars]].copy()
+# Ensure we get the real values of the selected variables
+real_value_vars = [var for var in selected_vars if var in data.columns]
+
+# Create df_selected including actual values instead of just categories
+df_selected = df_filtered[['Country', 'Cost of Living', 'Continent']].copy()
+
+# Add the selected variables' real values (0-100) to the dataframe
+for var in real_value_vars:
+    df_selected[var] = data[var]  # Add actual values, not categories
+
+# Compute Retirement Suitability Score using actual values
+if real_value_vars:
+    df_selected['Retirement Suitability'] = df_selected[real_value_vars].mean(axis=1)
+else:
+    df_selected['Retirement Suitability'] = np.nan  # Avoids errors if no variables are selected
 
 # Compute Retirement Suitability Score
 # Ensure we are using the rank categories (_Category)
@@ -179,9 +193,12 @@ df_selected = df_selected[df_selected["Continent"].isin(selected_continents)]
 # Ensure correct hover data references to _Category columns
 hover_data_adjusted = {f"{var}_Category": ':.2f' for var in selected_vars if f"{var}_Category" in df_selected.columns}
 
+# Update hover data to show actual values instead of 1-5 categories
+hover_data_adjusted = {var: ':.2f' for var in real_value_vars}
+
 fig_scatter = px.scatter(
     df_selected, 
-    x="Retirement Suitability", 
+    x="Retirement Suitability",  # ✅ Uses real values (0-100), not rank categories
     y="Cost of Living", 
     text="Country", 
     color=df_selected['Continent'],
@@ -192,8 +209,9 @@ fig_scatter = px.scatter(
     },
     template="plotly_dark", 
     category_orders={"Continent": ["America", "Europe", "Asia", "Africa", "Oceania"]},
-    hover_data=hover_data_adjusted  # ✅ Now correctly uses _Category columns
+    hover_data=hover_data_adjusted  # ✅ Shows actual values in hover
 )
+
 
 
 fig_scatter.update_traces(marker=dict(size=10), textposition='top center')
