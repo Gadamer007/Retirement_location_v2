@@ -98,17 +98,27 @@ def categorize_percentiles(df, variables):
 
 
 
-data = categorize_percentiles(data, data.columns[2:])  # Use `data`, not `df`
+categorized_vars = [
+    "Safety", "Healthcare", "Political Stability", "Pollution", "Climate",
+    "English Proficiency", "Openness", "Natural Scenery", "Natural Disaster"
+]
+data = categorize_percentiles(data, categorized_vars)
 
 
 
-# DEBUG: Check if category columns exist
+
+# Define categorized variables before using them
 categorized_vars = [
     "Safety", "Healthcare", "Political Stability", "Pollution", "Climate",
     "English Proficiency", "Openness", "Natural Scenery", "Natural Disaster"
 ]
 
+# Check if category columns exist
 missing_categories = [f"{var}_Category" for var in categorized_vars if f"{var}_Category" not in data.columns]
+
+if missing_categories:
+    st.write(f"⚠️ WARNING: The following category columns were not created: {missing_categories}")
+
 
 
 
@@ -163,21 +173,14 @@ if selected_vars:
     # Ensure selected variables exist before filtering
     available_vars = [var for var in selected_vars if f"{var}_Category" in df_filtered.columns]
     
-    # If no valid variables exist, stop execution
+     # If no valid variables exist, stop execution
     if not available_vars:
         st.error("No valid variables selected. Please check the dataset or adjust your selections.")
         st.stop()
     
-    df_selected = df_filtered[['Country', 'Cost of Living', 'Continent'] + [var for var in available_vars]].copy()
+    # Create df_selected with the available category variables
+    df_selected = df_filtered[['Country', 'Cost of Living', 'Continent'] + [f"{var}_Category" for var in available_vars]].copy()
 
-
-    
-    # If no valid variables exist, stop execution
-    if not available_vars:
-        st.warning("No valid variables selected. Please check the dataset or adjust your selections.")
-        st.stop()
-    
-    df_selected = df_filtered[['Country', 'Cost of Living', 'Continent'] + available_vars].copy()
 
     
     # If no valid variables exist, stop execution
