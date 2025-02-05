@@ -55,15 +55,13 @@ data['Continent'] = data['Country'].map(continent_mapping)
 # Categorize each variable into percentiles (quintiles)
 def categorize_percentiles(df, variables):
     for var in variables:
-        if var in df.columns:
+        if var in df.columns and df[var].notna().sum() > 0:  # Ensure variable exists & has non-null values
             if var == "Pollution":
-                # Pollution is inverted (higher value is worse)
                 df[f"{var}_Category"] = pd.qcut(
                     df[var].rank(method='min', ascending=False, na_option='bottom'),
-                    5, labels=[5, 4, 3, 2, 1]  # 1 = Best (Cleanest), 5 = Worst
+                    5, labels=[5, 4, 3, 2, 1]  # Higher pollution is worse
                 )
             elif var == "English Proficiency":
-                # English Proficiency is already categorized in the dataset
                 english_mapping = {
                     "Very high proficiency": 1,
                     "High proficiency": 2,
@@ -73,24 +71,24 @@ def categorize_percentiles(df, variables):
                 }
                 df[f"{var}_Category"] = df[var].map(english_mapping)
             elif var in ["Openness", "Natural Scenery"]:
-                # Lower rank is better
                 df[f"{var}_Category"] = pd.qcut(
                     df[var].rank(method='min', ascending=True, na_option='bottom'),
-                    5, labels=[1, 2, 3, 4, 5]  # 1 = Best (Most Open/Scenic), 5 = Worst
+                    5, labels=[1, 2, 3, 4, 5]  # 1 = Best rank, 5 = Worst rank
                 )
             elif var == "Natural Disaster":
-                # Higher values mean more disasters, so invert ranking
                 df[f"{var}_Category"] = pd.qcut(
                     df[var].rank(method='min', ascending=False, na_option='bottom'),
-                    5, labels=[5, 4, 3, 2, 1]  # 1 = Best (Safest), 5 = Worst
+                    5, labels=[5, 4, 3, 2, 1]  # Higher disaster values are worse
                 )
             else:
-                # Standard ranking for remaining variables (higher is better)
                 df[f"{var}_Category"] = pd.qcut(
-                    df[var].rank(method='first', ascending=True, na_option='bottom'),
-                    5, labels=[5, 4, 3, 2, 1]  # 1 = Best, 5 = Worst
+                    df[var].rank(method='min', ascending=True, na_option='bottom'),
+                    5, labels=[5, 4, 3, 2, 1]  # Higher value is better
                 )
+        else:
+            df[f"{var}_Category"] = np.nan  # Assign NaN if column does not exist or is empty
     return df
+
 
 
 
@@ -154,12 +152,16 @@ if selected_vars:
 
     # Now create df_selected from the already filtered data
     # Ensure selected variables exist in df_filtered
-    available_vars = [var for var in selected_vars if var in df_filtered.columns]
+    # Ensure selected variables exist before filtering
+    available_vars = [var for var in selected_vars if f"{var}_Category" in df_filtered.columns]
     
-    # DEBUG: Print missing variables
-    missing_vars = [var for var in selected_vars if var not in df_filtered.columns]
-    if missing_vars:
-        st.write(f"⚠️ WARNING: The following variables were not found in the dataset: {missing_vars}")
+    # If no valid variables exist, stop execution
+    if not available_vars:
+        st.error("No valid variables selected. Please check the dataset or adjust your selections.")
+        st.stop()
+    
+    df_selected = df_filtered[['Country', 'Cost of Living', 'Continent'] + [f"{var}_Category" for var in available_vars]].copy()
+
     
     # If no valid variables exist, stop execution
     if not available_vars:
