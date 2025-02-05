@@ -77,10 +77,18 @@ def categorize_percentiles(df, variables):
             # Ensure at least 5 unique values for binning
             if df[var].nunique() >= 5:
                 if var == "Pollution":
-                    df[f"{var}_Category"] = pd.qcut(
-                        df[var].rank(method='min', ascending=False, na_option='bottom'),
-                        5, labels=[5, 4, 3, 2, 1], duplicates="drop"
-                    )
+                    try:
+                        df[f"{var}_Category"] = pd.qcut(
+                            df[var].rank(method='min', ascending=True, na_option='bottom'),
+                            q=5, labels=[5, 4, 3, 2, 1], duplicates="drop"
+                        )
+                    except ValueError:
+                        # If there aren't enough unique values, use 'pd.cut' instead as a fallback
+                        df[f"{var}_Category"] = pd.cut(
+                            df[var].rank(method='min', ascending=True, na_option='bottom'),
+                            bins=5, labels=[5, 4, 3, 2, 1], include_lowest=True
+                        )
+
                 else:
                     df[f"{var}_Category"] = pd.qcut(
                         df[var].rank(method='min', ascending=True, na_option='bottom'),
