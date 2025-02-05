@@ -71,18 +71,29 @@ variables = [
 def categorize_percentiles(df, variables):
     for var in variables:
         if var in df.columns:
-            if var == "Pollution":
-                # Invert Pollution so lower values are better
-                df[f"{var}_Category"] = pd.qcut(
-                    df[var].rank(method='min', ascending=False, na_option='bottom'),
-                    5, labels=[5, 4, 3, 2, 1]  # 1 = Cleanest, 5 = Most Polluted
-                )
+            df[var] = pd.to_numeric(df[var], errors='coerce')  # Ensure numeric
+            df[var] = df[var].fillna(df[var].median())  # Fill NaN with median
+            
+            # Ensure at least 5 unique values for binning
+            if df[var].nunique() >= 5:
+                if var == "Pollution":
+                    df[f"{var}_Category"] = pd.qcut(
+                        df[var].rank(method='min', ascending=False, na_option='bottom'),
+                        5, labels=[5, 4, 3, 2, 1], duplicates="drop"
+                    )
+                else:
+                    df[f"{var}_Category"] = pd.qcut(
+                        df[var].rank(method='min', ascending=True, na_option='bottom'),
+                        5, labels=[1, 2, 3, 4, 5], duplicates="drop"
+                    )
             else:
-                df[f"{var}_Category"] = pd.qcut(
-                    df[var].rank(method='min', ascending=True, na_option='bottom'),
-                    5, labels=[1, 2, 3, 4, 5]  # 1 = Best, 5 = Worst
+                # If not enough unique values, create a simple rank category
+                df[f"{var}_Category"] = pd.cut(
+                    df[var].rank(method='min', ascending=True),
+                    bins=5, labels=[1, 2, 3, 4, 5], duplicates="drop"
                 )
     return df
+
 
 # Apply rank normalization to the dataset
 data = categorize_percentiles(data, variables)
