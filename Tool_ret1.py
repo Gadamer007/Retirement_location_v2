@@ -67,19 +67,52 @@ def categorize_percentiles(df, variables):
     for var in variables:
         if var in df.columns:
             if var == "Pollution":
-                # Invert Pollution so lower values are better
                 df[f"{var}_Category"] = pd.qcut(
                     df[var].rank(method='min', ascending=False, na_option='bottom'),
-                    5, labels=[5, 4, 3, 2, 1]  # 1 = Cleanest, 5 = Most Polluted
+                    5, labels=[5, 4, 3, 2, 1]  # 1 = Best, 5 = Worst
+                )
+            elif var == "English Proficiency":
+                # Map predefined English proficiency levels to numeric categories
+                english_mapping = {
+                    "Very high proficiency": 1,
+                    "High proficiency": 2,
+                    "Moderate proficiency": 3,
+                    "Low proficiency": 4,
+                    "Very low proficiency": 5
+                }
+                df[f"{var}_Category"] = df[var].map(english_mapping)
+            elif var in ["Openness", "Natural Scenery"]:
+                # Rank-based categorization (lower rank = better)
+                df[f"{var}_Category"] = pd.qcut(
+                    df[var].rank(method='min', ascending=True, na_option='bottom'),
+                    5, labels=[1, 2, 3, 4, 5]  # 1 = Best, 5 = Worst
+                )
+            elif var == "Natural Disaster":
+                # Reverse rank-based categorization (higher value = worse)
+                df[f"{var}_Category"] = pd.qcut(
+                    df[var].rank(method='min', ascending=False, na_option='bottom'),
+                    5, labels=[5, 4, 3, 2, 1]  # 1 = Best (lowest risk), 5 = Worst
                 )
             else:
+                # Standard categorization for remaining variables
                 df[f"{var}_Category"] = pd.qcut(
                     df[var].rank(method='first', ascending=True, na_option='bottom'),
                     5, labels=[5, 4, 3, 2, 1]  # 1 = Best, 5 = Worst
                 )
     return df
 
-data = categorize_percentiles(data, list(column_mapping.values()))
+
+categorized_vars = [
+    "Safety", "Healthcare", "Political Stability", "Pollution", "Climate", 
+    "English Proficiency", "Openness", "Natural Scenery", "Natural Disaster"
+]
+data = categorize_percentiles(data, categorized_vars)
+
+# DEBUG: Check if category columns exist
+missing_categories = [f"{var}_Category" for var in categorized_vars if f"{var}_Category" not in data.columns]
+if missing_categories:
+    st.write(f"⚠️ WARNING: The following category columns were not created: {missing_categories}")
+
 
 # Title for the Tool
 st.title("Best Countries for Early Retirement: Where to Retire Abroad?")
@@ -106,8 +139,10 @@ st.write(instructions)
 st.sidebar.subheader("Select Variables for Retirement Suitability")
 selected_vars = []
 sliders = {}
-variables = list(column_mapping.values())
-
+variables = [
+    "Safety", "Healthcare", "Political Stability", "Pollution", "Climate", 
+    "English Proficiency", "Openness", "Natural Scenery", "Natural Disaster"
+]
 for label in variables:
     if st.sidebar.checkbox(label, value=True):
         sliders[label] = st.sidebar.slider(f"{label}", 1, 5, 5, format=None)
@@ -126,7 +161,21 @@ if selected_vars:
             df_filtered = df_filtered[df_filtered[category_col].astype(float) <= max_category]  
 
     # Now create df_selected from the already filtered data
-    df_selected = df_filtered[['Country', 'Col_2025', 'Continent'] + selected_vars].copy()
+    # Ensure selected variables exist in df_filtered
+    available_vars = [var for var in selected_vars if var in df_filtered.columns]
+    
+    # DEBUG: Print missing variables
+    missing_vars = [var for var in selected_vars if var not in df_filtered.columns]
+    if missing_vars:
+        st.write(f"⚠️ WARNING: The following variables were not found in the dataset: {missing_vars}")
+    
+    # Select only available variables
+    df_selected = df_filtered[['Country', 'Cost of Living', 'Continent'] + available_vars].copy()
+    
+    # If no valid variables exist, stop execution
+    if not available_vars:
+        st.stop()
+
     df_selected['Valid_Var_Count'] = df_selected[selected_vars].count(axis=1)
     df_selected['Retirement Suitability'] = df_selected[selected_vars].mean(axis=1)
     
@@ -158,8 +207,14 @@ if selected_vars:
         df_selected["Pollution_Hover"] = 100 - df_selected["Pollution"]  # Invert Pollution values
 
     # Update hover data mapping
+    # Ensure hover text is formatted correctly
     hover_data_adjusted = {var: ':.2f' for var in selected_vars}
-    hover_data_adjusted["Valid_Var_Count"] = True  # Show count of available variables
+    hover_data_adjusted["Valid_Var_Count"] = True  
+    
+    # Special case: Adjust how Natural Disaster is displayed in the tooltip
+    if "Natural Disaster" in selected_vars:
+        hover_data_adjusted["Natural Disaster"] = ':.2f'
+
 
     # Ensure missing values are displayed as "NA"
     df_selected = df_selected.fillna("NA")  
@@ -247,7 +302,7 @@ if selected_vars:
         locations="Country", 
         locationmode="country names", 
         color=selected_map_var, 
-        color_continuous_scale="RdYlGn",
+        color_continuous_scale="RdYlGn_r" if selected_map_var == "Natural Disaster" else "RdYlGn",
         title=f"{selected_map_var} by Country",
         labels={selected_map_var: selected_map_var}  # Ensures label is correct
     )
