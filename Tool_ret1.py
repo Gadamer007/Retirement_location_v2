@@ -70,65 +70,44 @@ variables = [
 # Function to categorize each variable into 5 percentiles
 # Function to normalize and categorize variables into 5 rank groups
 # Function to normalize and categorize variables into 5 rank groups
-def categorize_percentiles(df, variables):
+def normalize_and_categorize(df, variables):
     for var in variables:
         if var in df.columns:
             df[var] = pd.to_numeric(df[var], errors='coerce')  # Ensure numeric
-            # Preserve NaN values for missing data instead of filling them with the median
-            df[var] = pd.to_numeric(df[var], errors='coerce')  # Ensure numeric
             df[var] = df[var].replace([np.inf, -np.inf], np.nan)  # Remove infinite values but keep NaN
-
-
-            # Normalize all variables to a 0-100 scale
+            
+            # Normalize all variables (except missing values remain as NaN)
             min_val = df[var].min()
             max_val = df[var].max()
             if min_val != max_val:  # Avoid division by zero
                 df[var] = (df[var] - min_val) / (max_val - min_val) * 100
-
-            # Special handling for English Proficiency (convert categorical 1-5 to meaningful values)
-            if var == "English Proficiency":
-                proficiency_mapping = {
-                    "Very High Proficiency": 100,
-                    "High Proficiency": 80,
-                    "Moderate Proficiency": 60,
-                    "Low Proficiency": 40,
-                    "Very Low Proficiency": 20
-                }
-    
-                # Ensure English Proficiency is treated as a string before mapping
-                df[var] = df[var].astype(str).str.strip().map(proficiency_mapping)
             
-                # Fill NaNs in case some values didn't match the mapping
-                df[var] = df[var].fillna(np.nan)  # Ensures NAs stay as NAs
+            # Define reversed scales (lower values = better)
+            inverse_vars = ["Pollution", "Natural Disaster"]
+            
+            if var in inverse_vars:
+                df[var] = 100 - df[var]  # Invert values (higher becomes worse)
 
             # Try using qcut first, if it fails use cut
             try:
-                if var == "Pollution":  # Pollution is inverse (higher is worse)
-                    df[f"{var}_Category"] = pd.qcut(
-                        df[var].rank(method='min', ascending=False, na_option='bottom'),
-                        q=5, labels=[5, 4, 3, 2, 1], duplicates="drop"
-                    )
-                else:
-                    df[f"{var}_Category"] = pd.qcut(
-                        df[var].rank(method='min', ascending=True, na_option='bottom'),
-                        q=5, labels=[1, 2, 3, 4, 5], duplicates="drop"
-                    )
+                df[f"{var}_Category"] = pd.qcut(
+                    df[var].rank(method='min', ascending=True, na_option='bottom'),
+                    q=5, labels=[1, 2, 3, 4, 5] if var not in inverse_vars else [5, 4, 3, 2, 1], 
+                    duplicates="drop"
+                )
             except ValueError:
-                # Fallback to pd.cut if qcut fails due to duplicate edges
                 df[f"{var}_Category"] = pd.cut(
                     df[var].rank(method='min', ascending=True, na_option='bottom'),
-                    bins=5, labels=[1, 2, 3, 4, 5], include_lowest=True
+                    bins=5, labels=[1, 2, 3, 4, 5] if var not in inverse_vars else [5, 4, 3, 2, 1],
+                    include_lowest=True
                 )
 
     return df
 
 
 
-
-
-
-# Apply rank normalization to the dataset
-data = categorize_percentiles(data, variables)
+# Apply normalization and ranking
+data = normalize_and_categorize(data, variables)
 
 # Create sidebar checkboxes and sliders using rank categories
 for label in variables:
@@ -184,7 +163,7 @@ for var in real_value_vars:
 
 # Compute Retirement Suitability Score using actual values
 if real_value_vars:
-    df_selected['Retirement Suitability'] = df_selected[real_value_vars].mean(axis=1)
+    df_selected['Retirement Suitability'] = df_selected[real_value_vars].mean(axis=1, skipna=True).round(2)
 else:
     df_selected['Retirement Suitability'] = np.nan  # Avoids errors if no variables are selected
 
