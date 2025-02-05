@@ -87,14 +87,15 @@ def categorize_percentiles(df, variables):
                 df[f"{var}_Category"] = df[var].map(english_mapping)
             elif var in ["Openness", "Natural Scenery"]:
                 df[f"{var}_Category"] = pd.qcut(
-                    df[var].rank(method='first', ascending=True, na_option='bottom'),
-                    5, labels=[1, 2, 3, 4, 5]  # 1 = Best, 5 = Worst
+                    df[var].rank(method='min', ascending=True, na_option='bottom'),
+                    5, labels=[1, 2, 3, 4, 5]
                 )
             elif var == "Natural Disaster":
                 df[f"{var}_Category"] = pd.qcut(
-                    df[var].rank(method='first', ascending=False, na_option='bottom'),
-                    5, labels=[1, 2, 3, 4, 5]  # 1 = Best (Safest), 5 = Worst
+                    df[var].rank(method='min', ascending=False, na_option='bottom'),
+                    5, labels=[5, 4, 3, 2, 1]  # Reverse: 5 = Worst, 1 = Best
                 )
+
             else:
                 df[f"{var}_Category"] = pd.qcut(
                     df[var].rank(method='first', ascending=True, na_option='bottom'),
@@ -104,6 +105,11 @@ def categorize_percentiles(df, variables):
 
 
 data = categorize_percentiles(data, list(column_mapping.values()))
+
+# Check if categories were created
+for var in column_mapping.values():
+    if f"{var}_Category" not in data.columns:
+        print(f"WARNING: {var}_Category is missing! Check if categorization ran correctly.")
 
 # Title for the Tool
 st.title("Best Countries for Early Retirement: Where to Retire Abroad?")
@@ -154,7 +160,12 @@ if selected_vars:
             df_filtered = df_filtered[df_filtered[category_col].astype(float) <= max_category]
 
     # Now create df_selected from the already filtered data
-    df_selected = df_filtered[['Country', 'Col_2025', 'Continent'] + selected_vars].copy()
+    if "Col_2025" not in df_filtered.columns:
+        print("ERROR: 'Col_2025' is missing from the dataset!")
+
+    available_vars = [var for var in selected_vars if var in df_filtered.columns]
+    df_selected = df_filtered[['Country', 'Continent'] + available_vars].copy()
+
     df_selected['Valid_Var_Count'] = df_selected[selected_vars].count(axis=1)
     df_selected['Retirement Suitability'] = df_selected[selected_vars].mean(axis=1)
     
@@ -279,6 +290,7 @@ if selected_vars:
         title=f"{selected_map_var} by Country",
         labels={selected_map_var: selected_map_var}
     )
+
 
     
     # Format the layout for a consistent display
