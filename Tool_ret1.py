@@ -74,7 +74,10 @@ def categorize_percentiles(df, variables):
     for var in variables:
         if var in df.columns:
             df[var] = pd.to_numeric(df[var], errors='coerce')  # Ensure numeric
-            df[var] = df[var].fillna(df[var].median())  # Fill NaN with median
+            # Preserve NaN values for missing data instead of filling them with the median
+            df[var] = pd.to_numeric(df[var], errors='coerce')  # Ensure numeric
+            df[var] = df[var].replace([np.inf, -np.inf], np.nan)  # Remove infinite values but keep NaN
+
 
             # Normalize all variables to a 0-100 scale
             min_val = df[var].min()
@@ -209,7 +212,8 @@ hover_data_adjusted = {
 # Add real values (0-100) for selected variables, ensuring no duplicates
 for var in real_value_vars:
     if var in df_selected.columns:  # Ensure it's already in df_selected to prevent conflicts
-        hover_data_adjusted[var] = ':.2f'
+        hover_data_adjusted[var] = df_selected[var].apply(lambda x: f"{x:.2f}" if pd.notna(x) else "N/A")
+
 
 
 
