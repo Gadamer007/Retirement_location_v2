@@ -58,9 +58,11 @@ def categorize_percentiles(df, variables):
         if var in df.columns:
             if var == "Pollution":
                 df[f"{var}_Category"] = pd.qcut(
-                    df[var].rank(method='min', ascending=False, na_option='bottom'),
-                    5, labels=[5, 4, 3, 2, 1]
+                    df[var].rank(method='min', ascending=True, na_option='bottom'),
+                    5, labels=[1, 2, 3, 4, 5],
+                    duplicates="drop"  # Fixes duplicate bin edge error
                 )
+
             elif var == "English Proficiency":
                 english_mapping = {
                     "Very high proficiency": 1,
