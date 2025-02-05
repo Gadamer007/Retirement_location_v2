@@ -29,6 +29,7 @@ data['Country'] = data['Country'].str.strip().str.title()
 
 # Standardize column names
 column_mapping = {
+    "Col_2025": "Cost of Living",
     "Safety index_2025": "Safety",
     "Healthcare_2025": "Healthcare",
     "Political stability_2023": "Political Stability",
@@ -40,11 +41,18 @@ column_mapping = {
     "Disaster_2024": "Natural Disaster"
 }
 
+# Apply renaming
 data = data.rename(columns=column_mapping)
 
-# DEBUG: Check column names after renaming
+# DEBUG: Verify renaming
 st.write("### Debug: Columns in Data After Renaming")
 st.write(data.columns.tolist())  # Print to verify correct renaming
+
+# Ensure all required columns exist
+missing_cols = [col for col in column_mapping.values() if col not in data.columns]
+if missing_cols:
+    st.write(f"⚠️ WARNING: The following renamed columns are missing: {missing_cols}")
+
 
 
 # Define country-to-continent mapping
@@ -84,7 +92,7 @@ def categorize_percentiles(df, variables):
             if var == "Pollution":
                 df[f"{var}_Category"] = pd.qcut(
                     df[var].rank(method='min', ascending=False, na_option='bottom'),
-                    5, labels=[5, 4, 3, 2, 1]  # 1 = Best, 5 = Worst
+                    5, labels=[5, 4, 3, 2, 1]  # 1 = Best (Cleanest), 5 = Worst (Most Polluted)
                 )
             elif var == "English Proficiency":
                 english_mapping = {
@@ -95,23 +103,33 @@ def categorize_percentiles(df, variables):
                     "Very low proficiency": 5
                 }
                 df[f"{var}_Category"] = df[var].map(english_mapping)
+
             elif var in ["Openness", "Natural Scenery"]:
                 df[f"{var}_Category"] = pd.qcut(
                     df[var].rank(method='min', ascending=True, na_option='bottom'),
-                    5, labels=[1, 2, 3, 4, 5]
+                    5, labels=[1, 2, 3, 4, 5]  # 1 = Best (Most Open/Scenic), 5 = Worst
                 )
+
             elif var == "Natural Disaster":
                 df[f"{var}_Category"] = pd.qcut(
                     df[var].rank(method='min', ascending=False, na_option='bottom'),
-                    5, labels=[5, 4, 3, 2, 1]  # Reverse: 5 = Worst, 1 = Best
+                    5, labels=[5, 4, 3, 2, 1]  # 5 = Most Disaster-Prone, 1 = Safest
                 )
 
             else:
                 df[f"{var}_Category"] = pd.qcut(
-                    df[var].rank(method='first', ascending=True, na_option='bottom'),
+                    df[var].rank(method='min', ascending=True, na_option='bottom'),
                     5, labels=[5, 4, 3, 2, 1]  # 1 = Best, 5 = Worst
                 )
+
+    # DEBUG: Ensure all category columns exist
+    for var in variables:
+        category_col = f"{var}_Category"
+        if category_col not in df.columns:
+            st.write(f"⚠️ WARNING: {category_col} is missing! Check if categorization ran correctly.")
+
     return df
+
 
 
 data = categorize_percentiles(data, list(column_mapping.values()))
@@ -179,15 +197,17 @@ if selected_vars:
     if "Col_2025" not in df_filtered.columns:
         print("ERROR: 'Col_2025' is missing from the dataset!")
 
-    available_vars = [var for var in selected_vars if var in df_filtered.columns]
     # Ensure selected variables exist in df_filtered
     available_vars = [var for var in selected_vars if var in df_filtered.columns]
-    df_selected = df_filtered[['Country', 'Continent'] + available_vars].copy()
     
-    # DEBUG: Print missing variables
+    # Handle missing variables gracefully
     missing_vars = [var for var in selected_vars if var not in df_filtered.columns]
     if missing_vars:
         st.write(f"⚠️ WARNING: The following variables were not found in the dataset: {missing_vars}")
+    
+    # Select only available variables
+    df_selected = df_filtered[['Country', 'Continent'] + available_vars].copy()
+
 
 
     df_selected['Valid_Var_Count'] = df_selected[selected_vars].count(axis=1)
