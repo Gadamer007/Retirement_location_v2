@@ -212,14 +212,12 @@ hover_data_adjusted = {
 # Add real values (0-100) for selected variables, ensuring no duplicates
 for var in real_value_vars:
     if var in df_selected.columns:  # Ensure it's already in df_selected to prevent conflicts
-        hover_data_adjusted[var] = df_selected[var].apply(lambda x: f"{x:.2f}" if pd.notna(x) else "N/A")
-
-
+        hover_data_adjusted = {var: (':.2f' if var in df_selected.columns else None) for var in real_value_vars}
 
 
 fig_scatter = px.scatter(
     df_selected, 
-    x="Retirement Suitability",  # ✅ Uses real values (0-100), not rank categories
+    x="Retirement Suitability",  
     y="Cost of Living", 
     text="Country", 
     color=df_selected['Continent'],
@@ -230,8 +228,9 @@ fig_scatter = px.scatter(
     },
     template="plotly_dark", 
     category_orders={"Continent": ["America", "Europe", "Asia", "Africa", "Oceania"]},
-    hover_data=hover_data_adjusted  # ✅ Shows actual values in hover
+    hover_data=hover_data_adjusted  # ✅ Fix applied here
 )
+
 
 
 
