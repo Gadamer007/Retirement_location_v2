@@ -174,16 +174,16 @@ if real_value_vars:
 else:
     df_selected['Retirement Suitability'] = np.nan  # Avoids errors if no variables are selected
 
-# Compute Retirement Suitability Score
-# Ensure we are using the rank categories (_Category)
-ranked_vars = [f"{var}_Category" for var in selected_vars if f"{var}_Category" in df_selected.columns]
+# Compute Retirement Suitability Score using actual values (0-100), not rank categories
+real_value_vars = [var for var in selected_vars if var in df_selected.columns]
 
-if not ranked_vars:
-    st.error("⚠️ No valid ranked variables found for Retirement Suitability Score calculation.")
+if not real_value_vars:
+    st.error("⚠️ No valid variables found for Retirement Suitability Score calculation.")
     st.stop()
 
-# Compute Retirement Suitability Score using the ranked categories
-df_selected['Retirement Suitability'] = df_selected[ranked_vars].astype(float).mean(axis=1)
+# Compute Retirement Suitability Score using actual values
+df_selected['Retirement Suitability'] = df_selected[real_value_vars].astype(float).mean(axis=1)
+
 
 
 # Multi-select continent filter
