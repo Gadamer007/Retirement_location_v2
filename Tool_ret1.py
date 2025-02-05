@@ -176,6 +176,9 @@ selected_continents = st.multiselect(
 df_selected = df_selected[df_selected["Continent"].isin(selected_continents)]
 
 # Scatter Plot
+# Ensure correct hover data references to _Category columns
+hover_data_adjusted = {f"{var}_Category": ':.2f' for var in selected_vars if f"{var}_Category" in df_selected.columns}
+
 fig_scatter = px.scatter(
     df_selected, 
     x="Retirement Suitability", 
@@ -189,8 +192,9 @@ fig_scatter = px.scatter(
     },
     template="plotly_dark", 
     category_orders={"Continent": ["America", "Europe", "Asia", "Africa", "Oceania"]},
-    hover_data={var: ':.2f' for var in selected_vars}
+    hover_data=hover_data_adjusted  # ✅ Now correctly uses _Category columns
 )
+
 
 fig_scatter.update_traces(marker=dict(size=10), textposition='top center')
 fig_scatter.update_layout(
