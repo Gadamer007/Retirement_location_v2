@@ -68,38 +68,41 @@ variables = [
 ]
 
 # Function to categorize each variable into 5 percentiles
-# Function to categorize each variable into 5 percentiles
+# Function to normalize and categorize variables into 5 rank groups
 def categorize_percentiles(df, variables):
     for var in variables:
         if var in df.columns:
             df[var] = pd.to_numeric(df[var], errors='coerce')  # Ensure numeric
             df[var] = df[var].fillna(df[var].median())  # Fill NaN with median
-            
-            # Ensure at least 5 unique values for binning
-            if df[var].nunique() >= 5:
-                if var == "Pollution":
-                    try:
-                        df[f"{var}_Category"] = pd.qcut(
-                            df[var].rank(method='min', ascending=True, na_option='bottom'),
-                            q=5, labels=[5, 4, 3, 2, 1], duplicates="drop"
-                        )
-                    except ValueError:
-                        # If there aren't enough unique values, use 'pd.cut' instead as a fallback
-                        df[f"{var}_Category"] = pd.cut(
-                            df[var].rank(method='min', ascending=True, na_option='bottom'),
-                            bins=5, labels=[5, 4, 3, 2, 1], include_lowest=True
-                        )
 
+            # Normalize all variables to a 0-100 scale
+            min_val = df[var].min()
+            max_val = df[var].max()
+            if min_val != max_val:  # Avoid division by zero
+                df[var] = (df[var] - min_val) / (max_val - min_val) * 100
+            
+            # Special handling for English Proficiency (convert categorical 1-5 to meaningful values)
+            if var == "English Proficiency":
+                proficiency_mapping = {1: 100, 2: 80, 3: 60, 4: 40, 5: 20}
+                df[var] = df[var].map(proficiency_mapping)
+
+            # Apply rank-based categorization (1-5)
+            if df[var].nunique() >= 5:
+                if var == "Pollution":  # Pollution is inverse (higher is worse)
+                    df[f"{var}_Category"] = pd.qcut(
+                        df[var].rank(method='min', ascending=False, na_option='bottom'),
+                        q=5, labels=[5, 4, 3, 2, 1], duplicates="drop"
+                    )
                 else:
                     df[f"{var}_Category"] = pd.qcut(
                         df[var].rank(method='min', ascending=True, na_option='bottom'),
-                        5, labels=[1, 2, 3, 4, 5], duplicates="drop"
+                        q=5, labels=[1, 2, 3, 4, 5], duplicates="drop"
                     )
             else:
-                # If not enough unique values, create a simple rank category
-                df[f"{var}_Category"] = pd.qcut(
+                # If not enough unique values, fall back to manual binning
+                df[f"{var}_Category"] = pd.cut(
                     df[var].rank(method='min', ascending=True, na_option='bottom'),
-                    q=5, labels=[5, 4, 3, 2, 1], duplicates="drop"
+                    bins=5, labels=[1, 2, 3, 4, 5], include_lowest=True
                 )
 
     return df
