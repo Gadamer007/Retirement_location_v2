@@ -66,10 +66,22 @@ variables = [
     "English Proficiency", "Openness", "Natural Scenery", "Natural Disaster"
 ]
 
+# Ensure all selected columns are numeric before using them in sliders
 for label in variables:
-    if label in data.columns and st.sidebar.checkbox(label, value=True):
-        sliders[label] = st.sidebar.slider(f"{label}", int(data[label].min()), int(data[label].max()), int(data[label].max()))
-        selected_vars.append(label)
+    if label in data.columns:
+        # Convert to numeric, force errors='coerce' to handle any text data
+        data[label] = pd.to_numeric(data[label], errors='coerce')
+
+        # Handle missing values by filling with median
+        if data[label].isna().any():
+            data[label].fillna(data[label].median(), inplace=True)
+
+        if st.sidebar.checkbox(label, value=True):
+            sliders[label] = st.sidebar.slider(
+                f"{label}", int(data[label].min()), int(data[label].max()), int(data[label].max())
+            )
+            selected_vars.append(label)
+
 
 if not selected_vars:
     st.error("⚠️ No valid variables selected. Please check the dataset or adjust your selections.")
