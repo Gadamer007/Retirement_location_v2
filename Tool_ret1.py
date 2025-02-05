@@ -78,7 +78,8 @@ def categorize_percentiles(df, variables):
     return df
 
 
-data = categorize_percentiles(data, df.columns[2:])  # Automatically selects numerical columns
+data = categorize_percentiles(data, data.columns[2:])  # Use `data`, not `df`
+
 
 
 # DEBUG: Check if category columns exist
