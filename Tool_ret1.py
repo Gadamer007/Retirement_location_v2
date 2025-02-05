@@ -155,7 +155,16 @@ if not available_vars:
 df_selected = df_filtered[['Country', 'Cost of Living', 'Continent'] + [f"{var}_Category" for var in available_vars]].copy()
 
 # Compute Retirement Suitability Score
-df_selected['Retirement Suitability'] = df_selected[selected_vars].mean(axis=1)
+# Ensure we are using the rank categories (_Category)
+ranked_vars = [f"{var}_Category" for var in selected_vars if f"{var}_Category" in df_selected.columns]
+
+if not ranked_vars:
+    st.error("⚠️ No valid ranked variables found for Retirement Suitability Score calculation.")
+    st.stop()
+
+# Compute Retirement Suitability Score using the ranked categories
+df_selected['Retirement Suitability'] = df_selected[ranked_vars].astype(float).mean(axis=1)
+
 
 # Multi-select continent filter
 selected_continents = st.multiselect(
