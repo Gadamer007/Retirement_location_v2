@@ -5,7 +5,7 @@ import numpy as np
 import requests
 from io import BytesIO
 
-# Load dataset
+# Load dataset 
 @st.cache_data
 def load_data():
     url = "https://raw.githubusercontent.com/Gadamer007/Retirement_location/main/Ret_data.xlsx"
