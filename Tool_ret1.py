@@ -198,6 +198,14 @@ selected_continents = st.multiselect(
 
 df_selected = df_selected[df_selected["Continent"].isin(selected_continents)]
 
+# Add a checkbox to filter out countries with more than 2 missing values
+exclude_incomplete = st.checkbox("Exclude countries with incomplete data")
+
+# Apply the filter if the checkbox is selected
+if exclude_incomplete:
+    df_selected = df_selected[df_selected.isna().sum(axis=1) <= 2]
+
+
 # Scatter Plot
 # Ensure correct hover data references to _Category columns
 hover_data_adjusted = {f"{var}_Category": ':.2f' for var in selected_vars if f"{var}_Category" in df_selected.columns}
