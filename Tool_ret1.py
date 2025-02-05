@@ -77,17 +77,10 @@ def normalize_and_categorize(df, variables):
             df[var] = df[var].replace([np.inf, -np.inf], np.nan)  # Remove infinite values but keep NaN
             
             # Normalize all variables (except missing values remain as NaN)
-            if var in df.columns and df[var].notna().sum() > 0:  # Ensure column exists and has values
-                min_val = df[var].min()
-                max_val = df[var].max()
-                if min_val != max_val:  # Avoid division by zero
-                    df[var] = (df[var] - min_val) / (max_val - min_val) * 100
-            
-            # Special handling for English Proficiency
-            if var == "English Proficiency":
-                df[var] = pd.to_numeric(df[var], errors='coerce')  # Ensure numeric
-                df[var] = (df[var] - df[var].min()) / (df[var].max() - df[var].min()) * 100  # Normalize 0-100
-
+            min_val = df[var].min()
+            max_val = df[var].max()
+            if min_val != max_val:  # Avoid division by zero
+                df[var] = (df[var] - min_val) / (max_val - min_val) * 100
             
             # Define reversed scales (lower values = better)
             inverse_vars = ["Pollution", "Natural Disaster"]
@@ -150,17 +143,10 @@ if not selected_vars:
 df_filtered = data.copy()
 
 # Apply slider filters based on rank categories
-# Apply slider filters based on rank categories, ensuring replotting
 for var in selected_vars:
     max_category = sliders[var]
     category_col = f"{var}_Category"
-    
-    if category_col in df_filtered.columns:
-        df_filtered = df_filtered[df_filtered[category_col].astype(int) <= max_category]
-
-# Force Streamlit to update the plot when filtering changes
-st.experimental_rerun()
-
+    df_filtered = df_filtered[df_filtered[category_col].astype(int) <= max_category]
 
 # Ensure selected variables exist and retrieve their actual values (0-100)
 real_value_vars = [var for var in selected_vars if var in data.columns]
@@ -226,20 +212,15 @@ hover_data_adjusted = {f"{var}_Category": ':.2f' for var in selected_vars if f"{
 
 # Fix hover data: Show actual values, ensuring no duplicates
 hover_data_adjusted = {
-    "Continent": True,  
-    "Country": True,  
-    "Retirement Suitability": ':.2f'  
+    "Continent": True,  # Ensure Continent appears first
+    "Country": True,  # Then Country
+    "Retirement Suitability": ':.2f'  # Round suitability score
 }
 
-# Ensure English Proficiency is included in hover data
-if "English Proficiency" in df_selected.columns:
-    hover_data_adjusted["English Proficiency"] = ':.2f'
-
-# Add real values (0-100) for selected variables
+# Add real values (0-100) for selected variables, ensuring no duplicates
 for var in real_value_vars:
-    if var in df_selected.columns and var != "English Proficiency":
-        hover_data_adjusted[var] = ':.2f'
-
+    if var in df_selected.columns:  # Ensure it's already in df_selected to prevent conflicts
+        hover_data_adjusted = {var: (':.2f' if var in df_selected.columns else None) for var in real_value_vars}
 
 
 fig_scatter = px.scatter(
