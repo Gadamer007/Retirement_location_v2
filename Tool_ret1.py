@@ -22,16 +22,6 @@ def load_data():
 data = load_data()
 data['Country'] = data['Country'].str.strip().str.title()
 
-# Standardize column names
-column_mapping = {
-    "Safety index_2025": "Safety",
-    "Healthcare_2025": "Healthcare",
-    "Political stability_2023": "Political Stability",
-    "Pollution_2025": "Pollution",
-    "Climate_2025": "Climate"
-}
-data = data.rename(columns=column_mapping)
-
 # Define country-to-continent mapping
 continent_mapping = {
     'United States': 'America', 'Canada': 'America', 'Mexico': 'America', 'Brazil': 'America',
@@ -67,12 +57,13 @@ def categorize_percentiles(df, variables):
     for var in variables:
         if var in df.columns:
             if var == "Pollution":
+                # Pollution is inverted (higher value is worse)
                 df[f"{var}_Category"] = pd.qcut(
                     df[var].rank(method='min', ascending=False, na_option='bottom'),
-                    5, labels=[5, 4, 3, 2, 1]  # 1 = Best, 5 = Worst
+                    5, labels=[5, 4, 3, 2, 1]  # 1 = Best (Cleanest), 5 = Worst
                 )
             elif var == "English Proficiency":
-                # Map predefined English proficiency levels to numeric categories
+                # English Proficiency is already categorized in the dataset
                 english_mapping = {
                     "Very high proficiency": 1,
                     "High proficiency": 2,
@@ -82,24 +73,25 @@ def categorize_percentiles(df, variables):
                 }
                 df[f"{var}_Category"] = df[var].map(english_mapping)
             elif var in ["Openness", "Natural Scenery"]:
-                # Rank-based categorization (lower rank = better)
+                # Lower rank is better
                 df[f"{var}_Category"] = pd.qcut(
                     df[var].rank(method='min', ascending=True, na_option='bottom'),
-                    5, labels=[1, 2, 3, 4, 5]  # 1 = Best, 5 = Worst
+                    5, labels=[1, 2, 3, 4, 5]  # 1 = Best (Most Open/Scenic), 5 = Worst
                 )
             elif var == "Natural Disaster":
-                # Reverse rank-based categorization (higher value = worse)
+                # Higher values mean more disasters, so invert ranking
                 df[f"{var}_Category"] = pd.qcut(
                     df[var].rank(method='min', ascending=False, na_option='bottom'),
-                    5, labels=[5, 4, 3, 2, 1]  # 1 = Best (lowest risk), 5 = Worst
+                    5, labels=[5, 4, 3, 2, 1]  # 1 = Best (Safest), 5 = Worst
                 )
             else:
-                # Standard categorization for remaining variables
+                # Standard ranking for remaining variables (higher is better)
                 df[f"{var}_Category"] = pd.qcut(
                     df[var].rank(method='first', ascending=True, na_option='bottom'),
                     5, labels=[5, 4, 3, 2, 1]  # 1 = Best, 5 = Worst
                 )
     return df
+
 
 
 categorized_vars = [
@@ -169,8 +161,13 @@ if selected_vars:
     if missing_vars:
         st.write(f"⚠️ WARNING: The following variables were not found in the dataset: {missing_vars}")
     
-    # Select only available variables
+    # If no valid variables exist, stop execution
+    if not available_vars:
+        st.warning("No valid variables selected. Please check the dataset or adjust your selections.")
+        st.stop()
+    
     df_selected = df_filtered[['Country', 'Cost of Living', 'Continent'] + available_vars].copy()
+
     
     # If no valid variables exist, stop execution
     if not available_vars:
