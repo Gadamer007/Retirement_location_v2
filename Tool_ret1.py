@@ -57,13 +57,14 @@ def categorize_percentiles(df, variables):
     for var in variables:
         if var in df.columns:
             if var == "Pollution":
+                # Pollution is inverted (higher value is worse)
                 df[f"{var}_Category"] = pd.qcut(
-                    df[var].rank(method='min', ascending=True, na_option='bottom'),
-                    5, labels=[1, 2, 3, 4, 5],
-                    duplicates="drop"  # Fixes duplicate bin edge error
+                    df[var].rank(method='min', ascending=False, na_option='bottom'),
+                    5, labels=[5, 4, 3, 2, 1],
+                    duplicates="drop"
                 )
-
             elif var == "English Proficiency":
+                # English Proficiency is already categorized
                 english_mapping = {
                     "Very high proficiency": 1,
                     "High proficiency": 2,
@@ -72,12 +73,29 @@ def categorize_percentiles(df, variables):
                     "Very low proficiency": 5
                 }
                 df[f"{var}_Category"] = df[var].map(english_mapping)
-            else:
+            elif var in ["Openness", "Natural Scenery"]:
+                # Lower rank is better
                 df[f"{var}_Category"] = pd.qcut(
                     df[var].rank(method='min', ascending=True, na_option='bottom'),
-                    5, labels=[1, 2, 3, 4, 5]
+                    5, labels=[1, 2, 3, 4, 5],
+                    duplicates="drop"
+                )
+            elif var == "Natural Disaster":
+                # Higher values mean more disasters, so invert ranking
+                df[f"{var}_Category"] = pd.qcut(
+                    df[var].rank(method='min', ascending=False, na_option='bottom'),
+                    5, labels=[5, 4, 3, 2, 1],
+                    duplicates="drop"
+                )
+            else:
+                # Standard ranking for remaining variables (higher is better)
+                df[f"{var}_Category"] = pd.qcut(
+                    df[var].rank(method='first', ascending=True, na_option='bottom'),
+                    5, labels=[5, 4, 3, 2, 1],
+                    duplicates="drop"
                 )
     return df
+
 
 
 data = categorize_percentiles(data, data.columns[2:])  # Use `data`, not `df`
