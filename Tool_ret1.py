@@ -199,6 +199,7 @@ df_selected = df_selected[df_selected["Continent"].isin(selected_continents)]
 # Ensure correct hover data references to _Category columns
 hover_data_adjusted = {f"{var}_Category": ':.2f' for var in selected_vars if f"{var}_Category" in df_selected.columns}
 
+
 # Ensure Continent appears first, then Country, then Retirement Suitability with 2 decimals
 hover_data_adjusted = {
     "Continent": True,  # Always show continent first
@@ -206,9 +207,13 @@ hover_data_adjusted = {
     "Retirement Suitability": ':.2f'  # Round to 2 decimals in hover
 }
 
-# Add real values (0-100) for selected variables
+# Add real values (0-100) for selected variables, handling English Proficiency separately
 for var in real_value_vars:
-    hover_data_adjusted[var] = ':.2f'
+    if var == "English Proficiency":
+        hover_data_adjusted[var] = True  # Display as-is, since it's already mapped to 100-20
+    else:
+        hover_data_adjusted[var] = ':.2f'  # Format to 2 decimals
+
 
 
 fig_scatter = px.scatter(
