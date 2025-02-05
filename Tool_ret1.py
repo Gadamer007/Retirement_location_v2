@@ -67,27 +67,26 @@ variables = [
     "English Proficiency", "Openness", "Natural Scenery", "Natural Disaster"
 ]
 
-# Function to categorize each variable into 5 percentiles
-# Function to normalize and categorize variables into 5 rank groups
-# Function to normalize and categorize variables into 5 rank groups
-def categorize_percentiles(df, variables):
+# Function to normalize variables (0-100) and categorize into 5 rank groups for filtering
+def normalize_and_categorize(df, variables):
     for var in variables:
         if var in df.columns:
             df[var] = pd.to_numeric(df[var], errors='coerce')  # Ensure numeric
             df[var] = df[var].fillna(df[var].median())  # Fill NaN with median
-
-            # Normalize all variables to a 0-100 scale
-            min_val = df[var].min()
-            max_val = df[var].max()
-            if min_val != max_val:  # Avoid division by zero
-                df[var] = (df[var] - min_val) / (max_val - min_val) * 100
 
             # Special handling for English Proficiency (convert categorical 1-5 to meaningful values)
             if var == "English Proficiency":
                 proficiency_mapping = {1: 100, 2: 80, 3: 60, 4: 40, 5: 20}
                 df[var] = df[var].map(proficiency_mapping)
 
-            # Try using qcut first, if it fails use cut
+            # Normalize all variables (except English Proficiency) to a 0-100 scale
+            if var != "English Proficiency":
+                min_val = df[var].min()
+                max_val = df[var].max()
+                if min_val != max_val:  # Avoid division by zero
+                    df[var] = (df[var] - min_val) / (max_val - min_val) * 100
+
+            # Rank-normalize into 5 categories for filtering
             try:
                 if var == "Pollution":  # Pollution is inverse (higher is worse)
                     df[f"{var}_Category"] = pd.qcut(
@@ -97,13 +96,13 @@ def categorize_percentiles(df, variables):
                 else:
                     df[f"{var}_Category"] = pd.qcut(
                         df[var].rank(method='min', ascending=True, na_option='bottom'),
-                        q=5, labels=[1, 2, 3, 4, 5], duplicates="drop"
+                        q=5, labels=[5, 4, 3, 2, 1], duplicates="drop"
                     )
             except ValueError:
                 # Fallback to pd.cut if qcut fails due to duplicate edges
                 df[f"{var}_Category"] = pd.cut(
                     df[var].rank(method='min', ascending=True, na_option='bottom'),
-                    bins=5, labels=[1, 2, 3, 4, 5], include_lowest=True
+                    bins=5, labels=[5, 4, 3, 2, 1], include_lowest=True
                 )
 
     return df
@@ -113,19 +112,25 @@ def categorize_percentiles(df, variables):
 
 
 
-# Apply rank normalization to the dataset
-data = categorize_percentiles(data, variables)
+
+# Apply normalization and ranking
+data = normalize_and_categorize(data, variables)
 
 # Create sidebar checkboxes and sliders using rank categories
 for label in variables:
     category_col = f"{label}_Category"
     if category_col in data.columns:
         if st.sidebar.checkbox(label, value=True):
-            sliders[label] = st.sidebar.slider(
-                f"{label}", 
-                1, 5, 5  # Always use 1-5 scale
-            )
+            if label == "English Proficiency":
+                # Keep the slider 1-5, but store the mapped value (20-100)
+                ep_slider = st.sidebar.slider(f"{label}", 1, 5, 5)  # 1-5 scale
+                sliders[label] = ep_slider
+            else:
+                sliders[label] = st.sidebar.slider(f"{label}", 1, 5, 5)  # 1-5 scale for other variables
+
             selected_vars.append(label)
+
+
 
 
 
@@ -143,7 +148,18 @@ df_filtered = data.copy()
 for var in selected_vars:
     max_category = sliders[var]
     category_col = f"{var}_Category"
-    df_filtered = df_filtered[df_filtered[category_col].astype(int) <= max_category]
+
+    if var == "English Proficiency":
+        # Convert 1-5 scale to 20-100 values
+        proficiency_mapping = {1: 100, 2: 80, 3: 60, 4: 40, 5: 20}
+        min_proficiency = proficiency_mapping[max_category]
+        
+        # Apply filter based on transformed proficiency scores
+        df_filtered = df_filtered[df_filtered[var] >= min_proficiency]
+    else:
+        # Apply normal filtering for other variables
+        df_filtered = df_filtered[df_filtered[category_col].astype(int) <= max_category]
+
 
 # Ensure selected variables exist and retrieve their actual values (0-100)
 real_value_vars = [var for var in selected_vars if var in data.columns]
@@ -160,17 +176,19 @@ for var in real_value_vars:
     if var in data.columns:
         df_selected[var] = data[var]  # Store real values instead of categories
 
-# Compute Retirement Suitability Score using actual values
-df_selected['Retirement Suitability'] = df_selected[real_value_vars].mean(axis=1)
-
+# Ensure English Proficiency uses 20-100 values in the Retirement Suitability Score
+if "English Proficiency" in real_value_vars:
+    df_selected["English Proficiency"] = df_selected["English Proficiency"].map(
+        {1: 100, 2: 80, 3: 60, 4: 40, 5: 20}
+    )
 
 # Add the selected variables' real values (0-100) to the dataframe
 for var in real_value_vars:
-    df_selected[var] = data[var]  # Add actual values, not categories
+    df_selected[var] = df_filtered[var]  # Ensure actual values from filtered data
 
-# Compute Retirement Suitability Score using actual values
+# Compute Retirement Suitability Score using actual values (0-100)
 if real_value_vars:
-    df_selected['Retirement Suitability'] = df_selected[real_value_vars].mean(axis=1)
+    df_selected['Retirement Suitability'] = df_selected[real_value_vars].astype(float).mean(axis=1).round(2)
 else:
     df_selected['Retirement Suitability'] = np.nan  # Avoids errors if no variables are selected
 
@@ -199,11 +217,9 @@ df_selected = df_selected[df_selected["Continent"].isin(selected_continents)]
 # Ensure correct hover data references to _Category columns
 hover_data_adjusted = {f"{var}_Category": ':.2f' for var in selected_vars if f"{var}_Category" in df_selected.columns}
 
-# Update hover data to show actual values instead of 1-5 categories
-hover_data_adjusted = {var: ':.2f' for var in real_value_vars}
-
 # Fix hover data: Use real values (0-100), not categories
 hover_data_adjusted = {var: ':.2f' for var in real_value_vars}
+hover_data_adjusted["Country"] = True  # Ensure "Country" appears in hover
 
 fig_scatter = px.scatter(
     df_selected, 
