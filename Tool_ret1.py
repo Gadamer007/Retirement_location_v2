@@ -69,6 +69,7 @@ variables = [
 
 # Function to categorize each variable into 5 percentiles
 # Function to normalize and categorize variables into 5 rank groups
+# Function to normalize and categorize variables into 5 rank groups
 def categorize_percentiles(df, variables):
     for var in variables:
         if var in df.columns:
@@ -80,14 +81,14 @@ def categorize_percentiles(df, variables):
             max_val = df[var].max()
             if min_val != max_val:  # Avoid division by zero
                 df[var] = (df[var] - min_val) / (max_val - min_val) * 100
-            
+
             # Special handling for English Proficiency (convert categorical 1-5 to meaningful values)
             if var == "English Proficiency":
                 proficiency_mapping = {1: 100, 2: 80, 3: 60, 4: 40, 5: 20}
                 df[var] = df[var].map(proficiency_mapping)
 
-            # Apply rank-based categorization (1-5)
-            if df[var].nunique() >= 5:
+            # Try using qcut first, if it fails use cut
+            try:
                 if var == "Pollution":  # Pollution is inverse (higher is worse)
                     df[f"{var}_Category"] = pd.qcut(
                         df[var].rank(method='min', ascending=False, na_option='bottom'),
@@ -98,14 +99,15 @@ def categorize_percentiles(df, variables):
                         df[var].rank(method='min', ascending=True, na_option='bottom'),
                         q=5, labels=[1, 2, 3, 4, 5], duplicates="drop"
                     )
-            else:
-                # If not enough unique values, fall back to manual binning
+            except ValueError:
+                # Fallback to pd.cut if qcut fails due to duplicate edges
                 df[f"{var}_Category"] = pd.cut(
                     df[var].rank(method='min', ascending=True, na_option='bottom'),
                     bins=5, labels=[1, 2, 3, 4, 5], include_lowest=True
                 )
 
     return df
+
 
 
 
