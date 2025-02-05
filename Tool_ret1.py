@@ -69,18 +69,22 @@ variables = [
 # Ensure all selected columns are numeric before using them in sliders
 for label in variables:
     if label in data.columns:
-        # Convert to numeric, force errors='coerce' to handle any text data
+        # Convert column to numeric and replace NaN with median before assigning back
         data[label] = pd.to_numeric(data[label], errors='coerce')
+        median_value = data[label].median()
 
-        # Handle missing values by filling with median
-        if data[label].isna().any():
-            data[label].fillna(data[label].median(), inplace=True)
+        # Fill NaNs with median (if median itself is NaN, fill with 0)
+        data[label] = data[label].fillna(0 if np.isnan(median_value) else median_value)
 
         if st.sidebar.checkbox(label, value=True):
             sliders[label] = st.sidebar.slider(
-                f"{label}", int(data[label].min()), int(data[label].max()), int(data[label].max())
+                f"{label}",
+                int(data[label].min()),  # Convert min value to int safely
+                int(data[label].max()),  # Convert max value to int safely
+                int(data[label].max())   # Default value
             )
             selected_vars.append(label)
+
 
 
 if not selected_vars:
