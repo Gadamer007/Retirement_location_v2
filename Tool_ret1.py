@@ -88,17 +88,27 @@ def normalize_and_categorize(df, variables):
             if var in inverse_vars:
                 df[var] = 100 - df[var]  # Invert values (higher becomes worse)
 
-            # Try using qcut first, if it fails use cut
             try:
-                df[f"{var}_Category"] = pd.qcut(
-                    df[var].rank(method='min', ascending=True, na_option='bottom'),
-                    q=5, labels=[1, 2, 3, 4, 5] if var not in inverse_vars else [5, 4, 3, 2, 1], 
-                    duplicates="drop"
-                )
+                # Variables where HIGH values are BETTER (rank from high to low)
+                direct_scale_vars = ["Safety", "Healthcare", "Political Stability", "Climate", "Openness", "Natural Scenery"]
+                
+                # Variables where LOW values are BETTER (rank from low to high)
+                inverse_scale_vars = ["Pollution", "Natural Disaster"]
+            
+                if var in inverse_scale_vars:
+                    df[f"{var}_Category"] = pd.qcut(
+                        df[var].rank(method='min', ascending=False, na_option='bottom'),  # Lower values ranked higher
+                        q=5, labels=[1, 2, 3, 4, 5], duplicates="drop"
+                    )
+                else:
+                    df[f"{var}_Category"] = pd.qcut(
+                        df[var].rank(method='min', ascending=True, na_option='bottom'),  # Higher values ranked higher
+                        q=5, labels=[5, 4, 3, 2, 1], duplicates="drop"  # Reverse labels: 1 = best, 5 = worst
+                    )
             except ValueError:
                 df[f"{var}_Category"] = pd.cut(
-                    df[var].rank(method='min', ascending=True, na_option='bottom'),
-                    bins=5, labels=[1, 2, 3, 4, 5] if var not in inverse_vars else [5, 4, 3, 2, 1],
+                    df[var].rank(method='min', ascending=(var in inverse_scale_vars), na_option='bottom'),
+                    bins=5, labels=[1, 2, 3, 4, 5] if var in inverse_scale_vars else [5, 4, 3, 2, 1],
                     include_lowest=True
                 )
 
@@ -107,7 +117,7 @@ def normalize_and_categorize(df, variables):
 
 
 # Apply normalization and ranking
-data = normalize_and_categorize(data, variables)
+data = normalize_and_categorize(data, variables)  # Ensures Climate and other variables are correctly ranked
 
 # Create sidebar checkboxes and sliders using rank categories
 for label in variables:
