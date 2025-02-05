@@ -103,9 +103,13 @@ data = categorize_percentiles(data, data.columns[2:])  # Use `data`, not `df`
 
 
 # DEBUG: Check if category columns exist
+categorized_vars = [
+    "Safety", "Healthcare", "Political Stability", "Pollution", "Climate",
+    "English Proficiency", "Openness", "Natural Scenery", "Natural Disaster"
+]
+
 missing_categories = [f"{var}_Category" for var in categorized_vars if f"{var}_Category" not in data.columns]
-if missing_categories:
-    st.write(f"⚠️ WARNING: The following category columns were not created: {missing_categories}")
+
 
 
 # Title for the Tool
