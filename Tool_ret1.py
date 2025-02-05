@@ -161,7 +161,7 @@ for var in real_value_vars:
         df_selected[var] = data[var]  # Store real values instead of categories
 
 # Compute Retirement Suitability Score using actual values
-df_selected['Retirement Suitability'] = df_selected[real_value_vars].mean(axis=1)
+df_selected['Retirement Suitability'] = df_selected[real_value_vars].mean(axis=1, skipna=False).round(2)
 
 
 # Add the selected variables' real values (0-100) to the dataframe
@@ -199,11 +199,17 @@ df_selected = df_selected[df_selected["Continent"].isin(selected_continents)]
 # Ensure correct hover data references to _Category columns
 hover_data_adjusted = {f"{var}_Category": ':.2f' for var in selected_vars if f"{var}_Category" in df_selected.columns}
 
-# Update hover data to show actual values instead of 1-5 categories
-hover_data_adjusted = {var: ':.2f' for var in real_value_vars}
+# Fix hover data: Show actual values, and display "N/A" for missing values
+hover_data_adjusted = {
+    "Continent": True,  # Ensure Continent appears first
+    "Country": True,  # Then Country
+    "Retirement Suitability": ':.2f'  # Round suitability score
+}
 
-# Fix hover data: Use real values (0-100), not categories
-hover_data_adjusted = {var: ':.2f' for var in real_value_vars}
+# Add real values (0-100) for selected variables
+for var in real_value_vars:
+    hover_data_adjusted[var] = df_selected[var].apply(lambda x: f"{x:.2f}" if pd.notna(x) else "N/A")
+
 
 fig_scatter = px.scatter(
     df_selected, 
