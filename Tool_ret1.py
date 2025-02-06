@@ -116,8 +116,52 @@ def normalize_and_categorize(df, variables):
             # Normalize all variables (except missing values remain as NaN)
             min_val = df[var].min()
             max_val = df[var].max()
-            if min_val != max_val:  # Avoid division by zero
-                df[var] = (df[var] - min_val) / (max_val - min_val) * 100
+            
+            # Special case for Openness & Natural Scenery (ranking transformation)
+            if var in ["Openness", "Natural Scenery"]:
+                min_rank = df[var].min()
+                max_rank = df[var].max()
+                
+                # Convert rank to 0-100 scale (1 = 100, worst = 0)
+                df[var] = ((max_rank - df[var]) / (max_rank - min_rank)) * 100  
+            
+                # Ensure transformed values are used for plotting & averaging
+                df[var] = df[var].round(2)  # Keep 2 decimal places for clarity
+            
+            else:
+                if min_val != max_val:  # Avoid division by zero
+                    df[var] = (df[var] - min_val) / (max_val - min_val) * 100
+            
+            # Define reversed scales (lower values = better)
+            inverse_vars = ["Pollution", "Natural Disaster"]
+            
+            if var in inverse_vars:
+                df[var] = 100 - df[var]  # Invert values (higher becomes worse)
+            
+            try:
+                # Variables where HIGH values are BETTER (rank from high to low)
+                direct_scale_vars = ["Safety", "Healthcare", "Political Stability", "Climate", "Openness", "Natural Scenery"]
+                
+                # Variables where LOW values are BETTER (rank from low to high)
+                inverse_scale_vars = ["Pollution", "Natural Disaster"]
+            
+                if var in inverse_scale_vars:
+                    df[f"{var}_Category"] = pd.qcut(
+                        df[var].rank(method='min', ascending=False, na_option='bottom'),  # Lower values ranked higher
+                        q=5, labels=[1, 2, 3, 4, 5], duplicates="drop"
+                    )
+                else:
+                    df[f"{var}_Category"] = pd.qcut(
+                        df[var].rank(method='min', ascending=True, na_option='bottom'),  # Higher values ranked higher
+                        q=5, labels=[5, 4, 3, 2, 1], duplicates="drop"  # Reverse labels: 1 = best, 5 = worst
+                    )
+            except ValueError:
+                df[f"{var}_Category"] = pd.cut(
+                    df[var].rank(method='min', ascending=(var in inverse_scale_vars), na_option='bottom'),
+                    bins=5, labels=[1, 2, 3, 4, 5] if var in inverse_scale_vars else [5, 4, 3, 2, 1],
+                    include_lowest=True
+                )
+
             
             # Define reversed scales (lower values = better)
             inverse_vars = ["Pollution", "Natural Disaster"]
