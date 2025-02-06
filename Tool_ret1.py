@@ -9,14 +9,28 @@ st.markdown("""
     <style>
     /* Adjust sidebar width */
     [data-testid="stSidebar"] {
-        width: 320px !important;  /* Increase width */
+        width: 330px !important;  /* Slightly wider */
     }
-    /* Reduce font size for better fit */
-    [data-testid="stSidebar"] * {
-        font-size: 14px !important;
+
+    /* Reduce font size for slider variables */
+    [data-testid="stSidebar"] label {
+        font-size: 13px !important;  /* Smaller font */
+        font-weight: 600 !important; /* Keep labels readable */
+        margin-bottom: -5px !important; /* Reduce space between label & slider */
+    }
+
+    /* Reduce spacing between checkbox and slider */
+    [data-testid="stSidebar"] .st-bb {
+        margin-bottom: -10px !important; /* Brings slider closer to the label */
+    }
+
+    /* Increase spacing between slider and the next variable */
+    [data-testid="stSidebar"] .st-br {
+        margin-bottom: 12px !important; /* More spacing between sliders */
     }
     </style>
     """, unsafe_allow_html=True)
+
 
 
 # Load dataset
@@ -134,21 +148,21 @@ def normalize_and_categorize(df, variables):
 data = normalize_and_categorize(data, variables)  # Ensures Climate and other variables are correctly ranked
 
 # Sidebar layout using columns for a more compact arrangement
-cols = st.sidebar.columns(2)  # Two columns for compact display
-i = 0  # Track column index
+cols = st.sidebar.columns(2)  # Two-column layout
+i = 0
 
 for label in variables:
     category_col = f"{label}_Category"
     if category_col in data.columns:
-        with cols[i % 2]:  # Distribute elements across columns
-            if st.checkbox(label, value=True, key=f"check_{label}"):
-                sliders[label] = st.slider(
-                    "",  # <-- Empty string removes duplicate label inside slider
-                    1, 5, 5, 
-                    key=f"slider_{label}"
-                )
-                selected_vars.append(label)
-        i += 1  # Switch to next column
+        with cols[i % 2]:  # Each variable + slider stays together
+            st.markdown(f"<div style='font-size:13px; font-weight:600;'>{label}</div>", unsafe_allow_html=True)
+            sliders[label] = st.slider(
+                "",  # No duplicate label
+                1, 5, 5, 
+                key=f"slider_{label}"
+            )
+        i += 1  # Move to next column
+
 
 
 
