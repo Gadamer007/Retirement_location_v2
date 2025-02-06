@@ -158,6 +158,16 @@ else:
 
     
     # 📈 Updated Scatter Plot
+    # 🌍 Define Fixed Colors for Continents
+    continent_colors = {
+        "America": "#1f77b4",   # Blue
+        "Europe": "#ff7f0e",    # Orange
+        "Asia": "#2ca02c",      # Green
+        "Africa": "#d62728",    # Red
+        "Oceania": "#9467bd"    # Purple
+    }
+    
+    # 📌 Updated Scatter Plot with Fixed Colors
     fig = px.scatter(
         df_filtered, 
         x="Retirement Suitability", 
@@ -170,8 +180,11 @@ else:
             "Retirement Suitability": "Retirement Suitability (0 - 100)"
         },
         template="plotly_dark",
-        hover_data=hover_data  # ✅ Use corrected hover_data
+        hover_data=hover_data,  
+        category_orders={"Continent": list(continent_colors.keys())},  # ✅ Keeps order consistent
+        color_discrete_map=continent_colors  # ✅ Fixes colors
     )
+
 
 
 
