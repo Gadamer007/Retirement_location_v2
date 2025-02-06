@@ -122,7 +122,7 @@ if exclude_incomplete:
 
 # 🛠️ Sidebar Filters (Restored Sliders)
 st.sidebar.subheader("Select Variables for Retirement Suitability")
-st.sidebar.markdown("<small>Move slider to the left to drop worst performing countries. For example, moving slider from 5 to 4 drops the bottom 20% performing countries</small>", unsafe_allow_html=True)
+st.sidebar.markdown("<small>Move slider to the left to drop worst performing countries. For example, moving slider from 5 to 4 drops the bottom 20% performing countries.</small>", unsafe_allow_html=True)
 sliders = {}
 selected_vars = []
 
