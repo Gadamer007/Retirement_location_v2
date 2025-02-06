@@ -221,53 +221,52 @@ else:
 
     st.plotly_chart(fig, use_container_width=True)
 
-# 📌 Reduce space between dropdown and map
-# 🌍 Global View Title
-st.markdown("<h3 style='margin-bottom: -20px;'>🌍 Global View: Select Variable to Display on the Map</h3>", unsafe_allow_html=True)
+# 🌍 Global View Title - Reduce spacing even further
+st.markdown("<h3 style='margin-bottom: -10px;'>🌍 Global View: Select Variable to Display on the Map</h3>", unsafe_allow_html=True)
 
-# ✅ Move dropdown back to the left & reduce spacing
+# ✅ Move dropdown back to the left & ensure it works
 selected_map_var = st.selectbox("Choose a variable to visualize", variables, key="map_variable")
 
-# ✅ Reduce extra spacing below the dropdown
-st.markdown("""
-    <style>
-    div[data-testid='stSelectbox'] {margin-bottom: -160px !important;}
-    </style>
-""", unsafe_allow_html=True)
+# ✅ Wrap dropdown & map inside a container to fix spacing & layout
+map_container = st.container()
 
- 
+with map_container:
+    # ✅ Further reduce space between dropdown and map
+    st.markdown("<div style='margin-top: -30px;'></div>", unsafe_allow_html=True)
 
+    # ✅ Filtered Data for the Map (Only Countries Being Displayed)
+    map_df = df_filtered[["Country", "Continent", selected_map_var]].copy()
 
+    # 🛠 Ensure numerical data and replace NaNs with a neutral color
+    map_df[selected_map_var] = pd.to_numeric(map_df[selected_map_var], errors="coerce")
+    map_df[selected_map_var] = map_df[selected_map_var].fillna(0)  # Missing values = neutral
 
-# ✅ Filtered Data for the Map (Only Countries Being Displayed)
-map_df = df_filtered[["Country", "Continent", selected_map_var]].copy()
+    # 📌 Create the Choropleth Map
+    fig_map = px.choropleth(
+        map_df,
+        locations="Country",
+        locationmode="country names",
+        color=selected_map_var,
+        title=f"{selected_map_var} by Country",
+        color_continuous_scale="RdYlGn",  # ✅ Red (low) → Yellow (medium) → Green (high)
+        labels={selected_map_var: "Score"},  # ✅ Simplify legend
+        template="plotly_dark"
+    )
 
-# 🛠 Ensure numerical data and replace NaNs with a neutral color
-map_df[selected_map_var] = pd.to_numeric(map_df[selected_map_var], errors="coerce")
-map_df[selected_map_var] = map_df[selected_map_var].fillna(0)  # Missing values = neutral
+    # 📌 Ensure toolbar is inside the map
+    fig_map.update_layout(
+        geo=dict(showcoastlines=True, showland=True, landcolor="black"),
+        title=dict(font=dict(color="white"), x=0.5, xanchor="center"),  # ✅ Centered Title
+        coloraxis_colorbar=dict(title="Score"),  # ✅ Simplify legend to just "Score"
+        margin=dict(t=10, b=0, l=0, r=0)  # ✅ Reduce map margins
+    )
 
-# 📌 Create the Choropleth Map
-fig_map = px.choropleth(
-    map_df,
-    locations="Country",
-    locationmode="country names",
-    color=selected_map_var,
-    title=f"{selected_map_var} by Country",
-    color_continuous_scale="RdYlGn",  # ✅ Red (low) → Yellow (medium) → Green (high)
-    labels={selected_map_var: f"{selected_map_var} (0-100)"},
-    template="plotly_dark"
-)
-
-# 📌 Update Map Layout for Better Readability
-fig_map.update_layout(
-    geo=dict(showcoastlines=True, showland=True, landcolor="black"),
-    title=dict(font=dict(color="white"), x=0.5, xanchor="center"),  # ✅ Centered Title
-    coloraxis_colorbar=dict(title="Score"),  # ✅ Simplify legend to just "Score"
-)
-
-# 🎯 Display the Map 
-st.plotly_chart(fig_map, use_container_width=True, config={"scrollZoom": False, "displayModeBar": True, "displaylogo": False})
-
+    # 🎯 Force toolbar inside the map
+    st.plotly_chart(fig_map, use_container_width=True, config={
+        "displayModeBar": True, 
+        "modeBarButtonsToAdd": ["zoom2d", "pan2d"], 
+        "displaylogo": False
+    })
 
 
 
