@@ -104,7 +104,6 @@ with st.expander("📖 Instructions (Click to Expand/Collapse)"):
     - The **map below** shows how the Retirement Suitability factors are distributed geographically.   
     - The tool does not account for **Capital Gains Tax (CGT)**, but users should consider it **[see here](https://taxsummaries.pwc.com/quick-charts/capital-gains-tax-cgt-rates)**.  
     """)
-st.write(instructions)
 
 # 🌎 Continent Selection Directly Below Title
 st.subheader("🌍 Select Continents to Display")
