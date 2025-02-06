@@ -116,39 +116,8 @@ def normalize_and_categorize(df, variables):
             # Normalize all variables (except missing values remain as NaN)
             min_val = df[var].min()
             max_val = df[var].max()
-            
-            # Special case for Openness & Natural Scenery (ranking transformation)
-            if var in ["Openness", "Natural Scenery"]:
-                df[var] = ((df[var].max() - df[var]) / (df[var].max() - df[var].min())) * 100  # Convert rank to 0-100 scale (1 = 100, worst = 0)
-            
-                # Ensure we have at least 5 unique values before applying qcut()
-                unique_values = df[var].nunique()
-                
-                if unique_values >= 5:
-                    try:
-                        df[f"{var}_Category"] = pd.qcut(
-                            df[var].rank(method='min', ascending=False, na_option='bottom'),
-                            q=min(unique_values, 5),  # Ensure we do not request more bins than unique values
-                            labels=[5, 4, 3, 2, 1][:min(unique_values, 5)],  # Adjust labels dynamically
-                            duplicates="drop"
-                        )
-                    except ValueError:
-                        df[f"{var}_Category"] = pd.cut(
-                            df[var].rank(method='min', ascending=False, na_option='bottom'),
-                            bins=min(unique_values, 5), 
-                            labels=[5, 4, 3, 2, 1][:min(unique_values, 5)], 
-                            include_lowest=True
-                        )
-                else:
-                    df[f"{var}_Category"] = pd.cut(
-                        df[var].rank(method='min', ascending=False, na_option='bottom'),
-                        bins=unique_values,  # Use the number of unique values as bins
-                        labels=list(range(unique_values, 0, -1)),  # Dynamically assign labels
-                        include_lowest=True
-                    )
-
-
-
+            if min_val != max_val:  # Avoid division by zero
+                df[var] = (df[var] - min_val) / (max_val - min_val) * 100
             
             # Define reversed scales (lower values = better)
             inverse_vars = ["Pollution", "Natural Disaster"]
@@ -223,17 +192,11 @@ if not selected_vars:
 # Start with full dataset
 df_filtered = data.copy()
 
-# Apply slider filters using category rankings (1-5) for all variables, including Openness & Natural Scenery
+# Apply slider filters based on rank categories
 for var in selected_vars:
-    max_category = sliders[var]  # Slider value (1-5)
+    max_category = sliders[var]
     category_col = f"{var}_Category"
-
-    if category_col in df_filtered.columns and df_filtered[category_col].notna().any():
-        df_filtered = df_filtered[df_filtered[category_col].astype(float) <= max_category]
-    else:
-        st.warning(f"Warning: {var} has missing data and may not filter correctly.")
-
-
+    df_filtered = df_filtered[df_filtered[category_col].astype(int) <= max_category]
 
 # Ensure selected variables exist and retrieve their actual values (0-100)
 real_value_vars = [var for var in selected_vars if var in data.columns]
@@ -294,22 +257,20 @@ if exclude_incomplete:
 
 
 # Scatter Plot
-# Ensure correct hover data references to transformed values
+# Ensure correct hover data references to _Category columns
+hover_data_adjusted = {f"{var}_Category": ':.2f' for var in selected_vars if f"{var}_Category" in df_selected.columns}
+
+# Fix hover data: Show actual values, ensuring no duplicates
 hover_data_adjusted = {
     "Continent": True,  # Ensure Continent appears first
     "Country": True,  # Then Country
     "Retirement Suitability": ':.2f'  # Round suitability score
 }
 
-# Ensure Openness and Natural Scenery display the normalized 0-100 score
-for var in real_value_vars:
-    if var in df_selected.columns:
-        hover_data_adjusted[var] = ':.2f'  # Display transformed 0-100 value
-
 # Add real values (0-100) for selected variables, ensuring no duplicates
 for var in real_value_vars:
     if var in df_selected.columns:  # Ensure it's already in df_selected to prevent conflicts
-        hover_data_adjusted[var] = ':.2f'  # Keep real values in hover box
+        hover_data_adjusted = {var: (':.2f' if var in df_selected.columns else None) for var in real_value_vars}
 
 
 fig_scatter = px.scatter(
@@ -342,6 +303,7 @@ fig_scatter.update_layout(
 )
 
 st.plotly_chart(fig_scatter, use_container_width=True)
+
 
 
 
