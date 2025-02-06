@@ -5,53 +5,38 @@ import numpy as np
 import requests
 from io import BytesIO
 
+# 🔹 Streamlit UI Customization
 st.markdown("""
     <style>
     /* Increase Sidebar Width */
     [data-testid="stSidebar"] {
-        min-width: 360px !important;  /* Wider sidebar */
+        min-width: 360px !important;
         max-width: 360px !important;
     }
-
     /* Reduce font size for checkboxes (variable labels) */
     [data-testid="stSidebar"] label {
-        font-size: 11px !important;  /* Smaller text */
-        font-weight: 500 !important; /* Keep labels readable */
-        margin-bottom: -10px !important; /* Reduce space between checkbox and slider */
-        white-space: nowrap !important; /* Prevent text from wrapping */
+        font-size: 11px !important;
+        font-weight: 500 !important;
+        margin-bottom: -10px !important;
+        white-space: nowrap !important;
     }
-
     /* Reduce space between checkbox and slider */
     [data-testid="stSidebar"] .st-bb {
-        margin-bottom: -15px !important; /* Brings slider closer to the label */
+        margin-bottom: -15px !important;
     }
-
-    /* Reduce spacing between sliders to ensure proper alignment */
+    /* Reduce spacing between sliders */
     [data-testid="stSidebar"] .st-br {
-        margin-bottom: 10px !important; /* More spacing between sliders */
-    }
-
-    /* Ensure checkboxes and sliders have more horizontal space */
-    [data-testid="stSidebarContent"] {
-        padding-right: 15px !important; /* Adds some padding to prevent text cutoff */
+        margin-bottom: 10px !important;
     }
     </style>
     """, unsafe_allow_html=True)
 
-
-
-
-
-# Load dataset
+# 🔹 Load Dataset
 @st.cache_data
 def load_data():
-    url = "https://raw.githubusercontent.com/Gadamer007/Retirement_location_v2/main/Ret_data.xlsx"  # Corrected GitHub repo
-    
-    # Download the file content from GitHub
+    url = "https://raw.githubusercontent.com/Gadamer007/Retirement_location_v2/main/Ret_data.xlsx"
     response = requests.get(url)
-    response.raise_for_status()  # Stop if the request fails
-
-    # Load the Excel file into Pandas from the downloaded content
+    response.raise_for_status()
     df = pd.read_excel(BytesIO(response.content), sheet_name="Country")
     return df
 
@@ -59,7 +44,7 @@ def load_data():
 data = load_data()
 data['Country'] = data['Country'].str.strip().str.title()
 
-# Define country-to-continent mapping
+# 🔹 Define country-to-continent mapping
 continent_mapping = {
     'United States': 'America', 'Canada': 'America', 'Mexico': 'America', 'Brazil': 'America',
     'Argentina': 'America', 'Chile': 'America', 'Colombia': 'America', 'Peru': 'America', 'Uruguay': 'America',
@@ -86,239 +71,64 @@ continent_mapping = {
     'Cyprus': 'Europe', 'Kosovo (Disputed Territory)': 'Europe', 'Australia': 'Oceania', 'New Zealand': 'Oceania'
 }
 
-# Assign continent
 data['Continent'] = data['Country'].map(continent_mapping)
 
-# Title for the Tool
-st.title("Best Countries for Early Retirement: Where to Retire Abroad?")
-
-# Sidebar Filters
-st.sidebar.subheader("Select Variables for Retirement Suitability")
-st.sidebar.markdown("<small>Move slider to the left to drop worst performing countries. For example, moving slider from 5 to 4 drops the bottom 20% performing countries</small>", unsafe_allow_html=True)
-selected_vars = []
-sliders = {}
-
-# Define the variables available for selection
+# 🔹 Define Variables
 variables = [
-    "Safety", "Healthcare", "Political Stability", "Pollution", "Climate", 
+    "Safety", "Healthcare", "Political Stability", "Pollution", "Climate",
     "English Proficiency", "Openness", "Natural Scenery", "Natural Disaster"
 ]
 
-# Function to categorize each variable into 5 percentiles
-# Function to normalize and categorize variables into 5 rank groups
-# Function to normalize and categorize variables into 5 rank groups
-def normalize_and_categorize(df, variables):
+high_is_better = ["Safety", "Healthcare", "Political Stability", "Climate", "English Proficiency"]
+low_is_better = ["Pollution", "Openness", "Natural Scenery"]
+
+# 🔹 Normalize & Categorize Data
+def normalize_and_rank(df):
     for var in variables:
         if var in df.columns:
-            df[var] = pd.to_numeric(df[var], errors='coerce')  # Ensure numeric
-            df[var] = df[var].replace([np.inf, -np.inf], np.nan)  # Remove infinite values but keep NaN
+            df[var] = pd.to_numeric(df[var], errors='coerce')
+            df[var] = df[var].replace([np.inf, -np.inf], np.nan)
 
-            # Normalize all variables (except missing values remain as NaN)
-            min_val = df[var].min()
-            max_val = df[var].max()
+            # Normalize all variables (0-100)
+            df[var] = (df[var] - df[var].min()) / (df[var].max() - df[var].min()) * 100
 
-            # Special case for variables using rankings
-            if var in ["Openness", "Natural Scenery", "Natural Disaster"]:
-                df[var] = df[var].rank(pct=True) * 100  # Convert rank to percentile scale (0-100)
+            # Reverse scoring for low-is-better variables
+            if var in low_is_better:
+                df[var] = 100 - df[var]
 
-            # Pollution: Inverted (cleaner air = better)
-            if var == "Pollution":
-                df[var] = ((df[var].max() - df[var]) / (df[var].max() - df[var].min())) * 100  # Cleaner air = higher score
-
-            # Natural Disaster: Inverted (safer = better)
-            if var == "Natural Disaster":
-                df[var] = ((df[var].max() - df[var]) / (df[var].max() - df[var].min())) * 100  # Ensure safest = 100, worst = 0
-
-
-
-            # Categorize into 5 groups for filtering
-            try:
-                inverse_vars = ["Pollution", "Natural Disaster"]
-                if var in inverse_vars:
-                    df[f"{var}_Category"] = pd.qcut(df[var].rank(method='min', ascending=False, na_option='bottom'), 
-                                                    q=5, labels=[1, 2, 3, 4, 5], duplicates="drop")
-                else:
-                    df[f"{var}_Category"] = pd.qcut(df[var].rank(method='min', ascending=True, na_option='bottom'),  
-                                                    q=5, labels=[5, 4, 3, 2, 1], duplicates="drop")
-            except ValueError:
-                df[f"{var}_Category"] = pd.cut(df[var].rank(method='min', ascending=(var in inverse_vars), na_option='bottom'),
-                                               bins=5, labels=[1, 2, 3, 4, 5] if var in inverse_vars else [5, 4, 3, 2, 1],
-                                               include_lowest=True)
+            # Rank-normalize into 5 bins (20% each)
+            df[f"{var}_Category"] = pd.qcut(df[var], q=5, labels=[5, 4, 3, 2, 1], duplicates="drop")
     return df
 
+data = normalize_and_rank(data)
 
+# 🔹 Sidebar Controls
+st.sidebar.subheader("Select Variables for Retirement Suitability")
+selected_vars = [var for var in variables if st.sidebar.checkbox(var, value=True)]
+sliders = {var: st.sidebar.slider(var, 1, 5, 5) for var in selected_vars}
 
-
-# Apply normalization and ranking
-data = normalize_and_categorize(data, variables)  # Ensures Climate and other variables are correctly ranked
-
-# Sidebar layout using columns for a more compact arrangement
-cols = st.sidebar.columns(2)  # Two-column layout
-i = 0
-selected_vars = []  # Reset selected variables list
-sliders = {}  # Reset sliders dictionary
-
-for label in variables:
-    category_col = f"{label}_Category"
-    if category_col in data.columns:
-        with cols[i % 2]:  # Each variable + slider stays together
-            checked = st.checkbox(f"**{label}**", value=True, key=f"check_{label}")  # Keep checkboxes, now bold
-            if checked:  # Only show slider if checkbox is selected
-                st.markdown(f"<div style='height:2px'></div>", unsafe_allow_html=True)  # Small gap for alignment
-                sliders[label] = st.slider(
-                    "",  # Empty label for slider
-                    1, 5, 5, 
-                    key=f"slider_{label}"
-                )
-                selected_vars.append(label)  # Add to selected variables list
-        i += 1  # Move to next column
-
-
-
-
-
-
-
-
-if not selected_vars:
-    st.error("⚠️ No valid variables selected. Please check the dataset or adjust your selections.")
-    st.stop()
-
-# Start with full dataset
-# Start with full dataset
+# 🔹 Filter Data by Slider Selections
 df_filtered = data.copy()
-
-# Apply slider filters using actual 0-100 transformed values instead of category ranks
 for var in selected_vars:
-    max_category = sliders[var]  # Slider value (1-5)
+    df_filtered = df_filtered[df_filtered[f"{var}_Category"].astype(int) <= sliders[var]]
 
-    if var in ["Openness", "Natural Scenery", "Natural Disaster"]:
-        try:
-            df_filtered[f"{var}_Category"] = pd.qcut(df_filtered[var], q=5, labels=[5, 4, 3, 2, 1], duplicates="drop")  
-            # 🔥 Reversed labels: "5" is worst (most dangerous), "1" is safest (least risk)
-        except ValueError:
-            df_filtered[f"{var}_Category"] = pd.cut(df_filtered[var], bins=5, labels=[5, 4, 3, 2, 1], include_lowest=True)
+# 🔹 Compute Suitability Score
+df_filtered["Retirement Suitability"] = df_filtered[selected_vars].mean(axis=1)
 
-        # 🔥 Convert to numeric to avoid NaN casting issues
-        df_filtered[f"{var}_Category"] = pd.to_numeric(df_filtered[f"{var}_Category"], errors="coerce").fillna(5).astype(int)
+# 🔹 Continent Filter
+selected_continents = st.multiselect("Select Continents", df_filtered["Continent"].unique(), df_filtered["Continent"].unique())
+df_filtered = df_filtered[df_filtered["Continent"].isin(selected_continents)]
 
-        # 🔥 Apply the slider filter
-        df_filtered = df_filtered[df_filtered[f"{var}_Category"] >= (6 - max_category)]  
-        # ✅ Reverse filter: Keeps SAFER countries when slider moves left
-
-    else:
-        category_col = f"{var}_Category"
-        df_filtered = df_filtered[df_filtered[category_col].astype(int) <= max_category]
-
-
-
-
-
-# Ensure selected variables exist and retrieve their actual values (0-100)
-real_value_vars = [var for var in selected_vars if var in data.columns]
-
-if not real_value_vars:
-    st.error("⚠️ No valid variables after filtering. Adjust your selections.")
-    st.stop()
-
-# Create df_selected using real values, not just categories
-df_selected = df_filtered[['Country', 'Cost of Living', 'Continent']].copy()
-
-# Add selected variables' real values (0-100)
-for var in real_value_vars:
-    if var in data.columns:
-        df_selected[var] = data[var]  # Store real values instead of categories
-
-# Compute Retirement Suitability Score using actual values
-df_selected['Retirement Suitability'] = df_selected[real_value_vars].mean(axis=1, skipna=False).round(2)
-
-
-# Add the selected variables' real values (0-100) to the dataframe
-for var in real_value_vars:
-    df_selected[var] = data[var]  # Add actual values, not categories
-
-# Compute Retirement Suitability Score using actual values
-if real_value_vars:
-    df_selected['Retirement Suitability'] = df_selected[real_value_vars].mean(axis=1, skipna=True).round(2)
-else:
-    df_selected['Retirement Suitability'] = np.nan  # Avoids errors if no variables are selected
-
-# Compute Retirement Suitability Score using actual values (0-100), not rank categories
-real_value_vars = [var for var in selected_vars if var in df_selected.columns]
-
-if not real_value_vars:
-    st.error("⚠️ No valid variables found for Retirement Suitability Score calculation.")
-    st.stop()
-
-# Compute Retirement Suitability Score using actual values
-df_selected['Retirement Suitability'] = df_selected[real_value_vars].astype(float).mean(axis=1)
-
-
-
-# Multi-select continent filter
-selected_continents = st.multiselect(
-    "Select Continents to Display", 
-    options=df_selected["Continent"].unique().tolist(), 
-    default=df_selected["Continent"].unique().tolist()
+# 🔹 Scatter Plot
+fig = px.scatter(
+    df_filtered, x="Retirement Suitability", y="Cost of Living", text="Country", color="Continent",
+    title="Retirement Suitability vs Cost of Living",
+    labels={"Cost of Living": "Cost of Living (0-100)", "Retirement Suitability": "Retirement Suitability (0-100)"},
+    template="plotly_dark"
 )
 
-df_selected = df_selected[df_selected["Continent"].isin(selected_continents)]
+st.plotly_chart(fig, use_container_width=True)
 
-# Add a checkbox to filter out countries with more than 2 missing values
-exclude_incomplete = st.checkbox("Exclude countries with incomplete data (more than 2 N/A)")
-
-# Apply the filter if the checkbox is selected
-if exclude_incomplete:
-    df_selected = df_selected[df_selected.isna().sum(axis=1) <= 2]
-
-
-# Scatter Plot
-# Ensure correct hover data references to _Category columns
-hover_data_adjusted = {f"{var}_Category": ':.2f' for var in selected_vars if f"{var}_Category" in df_selected.columns}
-
-# Fix hover data: Show actual values, ensuring no duplicates
-hover_data_adjusted = {
-    "Continent": True,  # Ensure Continent appears first
-    "Country": True,  # Then Country
-    "Retirement Suitability": ':.2f'  # Round suitability score
-}
-
-# Add real values (0-100) for selected variables, ensuring no duplicates
-for var in real_value_vars:
-    if var in df_selected.columns:  # Ensure it's already in df_selected to prevent conflicts
-        hover_data_adjusted = {var: (':.2f' if var in df_selected.columns else None) for var in real_value_vars}
-
-
-fig_scatter = px.scatter(
-    df_selected, 
-    x="Retirement Suitability",  
-    y="Cost of Living", 
-    text="Country", 
-    color=df_selected['Continent'],
-    title="Retirement Suitability vs Cost of Living", 
-    labels={
-        "Cost of Living": "Cost of Living (0 - 100)", 
-        "Retirement Suitability": "Retirement Suitability (0 - 100)"
-    },
-    template="plotly_dark", 
-    category_orders={"Continent": ["America", "Europe", "Asia", "Africa", "Oceania"]},
-    hover_data=hover_data_adjusted  # ✅ Fix applied here
-)
-
-
-
-
-
-fig_scatter.update_traces(marker=dict(size=10), textposition='top center')
-fig_scatter.update_layout(
-    title=dict(text="Retirement Suitability vs Cost of Living", font=dict(color='white', size=24), x=0.5, xanchor="center"),
-    xaxis=dict(linecolor='white', tickfont=dict(color='white'), showgrid=True, gridcolor='rgba(255, 255, 255, 0.3)', gridwidth=1),
-    yaxis=dict(linecolor='white', tickfont=dict(color='white'), showgrid=True, gridcolor='rgba(255, 255, 255, 0.3)', gridwidth=1),
-    legend=dict(font=dict(color="white")),
-    paper_bgcolor='black', plot_bgcolor='black'
-)
-
-st.plotly_chart(fig_scatter, use_container_width=True)
 
 
 
