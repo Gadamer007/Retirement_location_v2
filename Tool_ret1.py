@@ -146,9 +146,9 @@ else:
     
     # ➕ Manually add selected variables without conflicting with the DataFrame
     for var in variables:
-    if var in df_filtered.columns:
-        df_filtered[var] = pd.to_numeric(df_filtered[var], errors="coerce").round(2)  # ✅ Force numeric type safely
-        hover_data[var] = df_filtered[var].apply(lambda x: f"{x:.2f}" if pd.notna(x) else "NA")  # ✅ Ensure string conversion only on `hover_data`
+        if var in df_filtered.columns:
+            df_filtered[var] = pd.to_numeric(df_filtered[var], errors="coerce").round(2)  # ✅ Force numeric type safely
+            hover_data[var] = df_filtered[var].apply(lambda x: f"{x:.2f}" if pd.notna(x) else "NA")  # ✅ Ensure string conversion only on `hover_data`
 
 
     
