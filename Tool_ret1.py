@@ -9,24 +9,24 @@ st.markdown("""
     <style>
     /* Adjust sidebar width */
     [data-testid="stSidebar"] {
-        width: 330px !important;  /* Slightly wider */
+        width: 330px !important;  /* Slightly wider for better fit */
     }
 
-    /* Reduce font size for slider variables */
+    /* Reduce font size for checkboxes (variable labels) */
     [data-testid="stSidebar"] label {
-        font-size: 13px !important;  /* Smaller font */
-        font-weight: 600 !important; /* Keep labels readable */
-        margin-bottom: -5px !important; /* Reduce space between label & slider */
+        font-size: 12px !important;  /* Smaller text */
+        font-weight: 500 !important; /* Keep labels readable */
+        margin-bottom: -8px !important; /* Reduce space between checkbox and slider */
     }
 
-    /* Reduce spacing between checkbox and slider */
+    /* Reduce space between checkbox and slider */
     [data-testid="stSidebar"] .st-bb {
-        margin-bottom: -10px !important; /* Brings slider closer to the label */
+        margin-bottom: -12px !important; /* Brings slider closer to the label */
     }
 
-    /* Increase spacing between slider and the next variable */
+    /* Increase spacing between sliders for clarity */
     [data-testid="stSidebar"] .st-br {
-        margin-bottom: 12px !important; /* More spacing between sliders */
+        margin-bottom: 14px !important; /* More spacing between sliders */
     }
     </style>
     """, unsafe_allow_html=True)
@@ -157,10 +157,10 @@ for label in variables:
     category_col = f"{label}_Category"
     if category_col in data.columns:
         with cols[i % 2]:  # Each variable + slider stays together
-            checked = st.checkbox(label, value=True, key=f"check_{label}")  # Restore checkboxes
+            checked = st.checkbox(label, value=True, key=f"check_{label}")  # Keep checkboxes
             if checked:  # Only show slider if checkbox is selected
                 sliders[label] = st.slider(
-                    "",  # No duplicate label
+                    "",  # Empty label to prevent repetition
                     1, 5, 5, 
                     key=f"slider_{label}"
                 )
