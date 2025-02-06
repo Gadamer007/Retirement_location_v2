@@ -255,18 +255,34 @@ with map_container:
 
     # 📌 Ensure toolbar is inside the map
     fig_map.update_layout(
-        geo=dict(showcoastlines=True, showland=True, landcolor="black"),
-        title=dict(font=dict(color="white"), x=0.5, xanchor="center"),  # ✅ Centered Title
-        coloraxis_colorbar=dict(title="Score"),  # ✅ Simplify legend to just "Score"
-        margin=dict(t=10, b=0, l=0, r=0)  # ✅ Reduce map margins
-    )
+    geo=dict(
+        showcoastlines=True,
+        showland=True,
+        landcolor="black"
+    ),
+    title=dict(
+        font=dict(color="white"),
+        x=0.5,
+        xanchor="center"
+    ),
+    coloraxis_colorbar=dict(
+        title="Score", 
+        orientation="h",  # ✅ Horizontal legend
+        x=0.5,            # ✅ Center it below the map
+        y=-0.3,           # ✅ Move it lower below the map
+        xanchor="center",
+        yanchor="bottom"
+    ),
+    margin=dict(t=10, b=0, l=0, r=0),  # ✅ Reduce margins
+)
 
-    # 🎯 Force toolbar inside the map
-    st.plotly_chart(fig_map, use_container_width=True, config={
-        "displayModeBar": True, 
-        "modeBarButtonsToAdd": ["zoom2d", "pan2d"], 
-        "displaylogo": False
-    })
+# ✅ Ensure zoom/pan functions are inside the dark area of the map
+st.plotly_chart(fig_map, use_container_width=True, config={
+    "displayModeBar": True, 
+    "modeBarButtonsToAdd": ["zoom2d", "pan2d", "resetScale2d"],  
+    "displaylogo": False
+})
+
 
 
 
