@@ -132,11 +132,14 @@ def normalize_and_categorize(df, variables):
                 if min_val != max_val:  # Avoid division by zero
                     df[var] = (df[var] - min_val) / (max_val - min_val) * 100
             
-            # Define reversed scales (lower values = better)
-            inverse_vars = ["Pollution", "Natural Disaster"]
+            # Reverse Pollution normally (low is good, high is bad)
+            if var == "Pollution":
+                df[var] = 100 - df[var]  # Keep existing transformation for Pollution
             
-            if var in inverse_vars:
-                df[var] = 100 - df[var]  # Invert values (higher becomes worse)
+            # Reverse Natural Disaster to ensure "safer = better"
+            if var == "Natural Disaster":
+                df[var] = ((df[var].max() - df[var]) / (df[var].max() - df[var].min())) * 100  # Ensure safest = 100, worst = 0
+
             
             try:
                 # Variables where HIGH values are BETTER (rank from high to low)
@@ -240,13 +243,14 @@ df_filtered = data.copy()
 for var in selected_vars:
     max_category = sliders[var]  # Slider value (1-5)
 
-    if var in ["Openness", "Natural Scenery"]:
-        # Convert slider value (1-5) to percentage threshold (20% per category)
-        threshold = (6 - max_category) * 20  # 5 -> 20%, 4 -> 40%, ..., 1 -> 100%
+    if var in ["Openness", "Natural Scenery", "Natural Disaster"]:
+        # Get percentile-based filtering to ensure correct distribution
+        threshold = np.percentile(df_filtered[var].dropna(), (6 - max_category) * 20)  
         df_filtered = df_filtered[df_filtered[var] >= threshold]  # Keep countries above threshold
     else:
         category_col = f"{var}_Category"
         df_filtered = df_filtered[df_filtered[category_col].astype(int) <= max_category]
+
 
 
 # Ensure selected variables exist and retrieve their actual values (0-100)
