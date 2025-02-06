@@ -119,16 +119,20 @@ def normalize_and_categorize(df, variables):
             
             # Special case for Openness & Natural Scenery (ranking transformation)
             if var in ["Openness", "Natural Scenery"]:
-                df[var] = ((max_val - df[var]) / (max_val - min_val)) * 100  # Convert rank to 0-100 scale (1 = 100, worst = 0)
-                
-                # Create categorical rankings (1-5) using rank normalization
-                df[f"{var}_Category"] = pd.qcut(
-                    df[var].rank(method='min', ascending=False, na_option='bottom'),  
-                    q=5, labels=[5, 4, 3, 2, 1], duplicates="drop"
-                )
-                
-            elif min_val != max_val:  # Avoid division by zero
-                df[var] = (df[var] - min_val) / (max_val - min_val) * 100
+                df[var] = ((df[var].max() - df[var]) / (df[var].max() - df[var].min())) * 100  # Convert rank to 0-100 scale (1 = 100, worst = 0)
+            
+                # Ensure we have at least 5 unique values before applying qcut()
+                if df[var].nunique() >= 5:
+                    df[f"{var}_Category"] = pd.qcut(
+                        df[var].rank(method='min', ascending=False, na_option='bottom'),  
+                        q=5, labels=[5, 4, 3, 2, 1], duplicates="drop"
+                    )
+                else:
+                    df[f"{var}_Category"] = pd.cut(
+                        df[var].rank(method='min', ascending=False, na_option='bottom'),
+                        bins=5, labels=[5, 4, 3, 2, 1], include_lowest=True
+                    )
+
 
             
             # Define reversed scales (lower values = better)
@@ -204,13 +208,16 @@ if not selected_vars:
 # Start with full dataset
 df_filtered = data.copy()
 
-# Apply slider filters using category rankings (1-5) for all variables, including Openness & Scenery
+# Apply slider filters using category rankings (1-5) for all variables, including Openness & Natural Scenery
 for var in selected_vars:
     max_category = sliders[var]  # Slider value (1-5)
     category_col = f"{var}_Category"
 
-    if category_col in df_filtered.columns:
+    if category_col in df_filtered.columns and df_filtered[category_col].notna().any():
         df_filtered = df_filtered[df_filtered[category_col].astype(float) <= max_category]
+    else:
+        st.warning(f"Warning: {var} has missing data and may not filter correctly.")
+
 
 
 # Ensure selected variables exist and retrieve their actual values (0-100)
