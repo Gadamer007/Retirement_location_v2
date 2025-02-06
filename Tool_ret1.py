@@ -246,6 +246,17 @@ with map_container:
     map_df[selected_map_var] = pd.to_numeric(map_df[selected_map_var], errors="coerce")
     map_df[selected_map_var] = map_df[selected_map_var].fillna(0)  # Missing values = neutral
 
+    # ✅ Define custom color scales
+    color_scale_map = {
+        "Cost of Living": "GnYlRd",  # ✅ Reverse scale for Cost of Living (Low = Green, High = Red)
+    }
+
+    # ✅ Default color scale for all other variables
+    default_color_scale = "RdYlGn"
+
+    # ✅ Dynamically select the correct scale
+    selected_color_scale = color_scale_map.get(selected_map_var, default_color_scale)
+
     # 📌 Create the Choropleth Map
     fig_map = px.choropleth(
         map_df,
@@ -253,40 +264,41 @@ with map_container:
         locationmode="country names",
         color=selected_map_var,
         title=f"{selected_map_var} by Country",
-        color_continuous_scale="RdYlGn",  # ✅ Red (low) → Yellow (medium) → Green (high)
+        color_continuous_scale=selected_color_scale,  # ✅ Dynamically apply correct color scale
         labels={selected_map_var: "Score"},  # ✅ Simplify legend
         template="plotly_dark"
     )
 
     # 📌 Ensure toolbar is inside the map
     fig_map.update_layout(
-    geo=dict(
-        showcoastlines=True,
-        showland=True,
-        landcolor="black"
-    ),
-    title=dict(
-        font=dict(color="white"),
-        x=0.5,
-        xanchor="center"
-    ),
-    coloraxis_colorbar=dict(
-        title=None,
-        orientation="h",
-        x=0.5,
-        y=-0.25,  # ✅ Move the label up slightly (was -0.3)
-        xanchor="center",
-        yanchor="bottom"
-    ),
-    margin=dict(t=10, b=0, l=0, r=0),  # ✅ Reduce margins
-)
+        geo=dict(
+            showcoastlines=True,
+            showland=True,
+            landcolor="black"
+        ),
+        title=dict(
+            font=dict(color="white"),
+            x=0.5,
+            xanchor="center"
+        ),
+        coloraxis_colorbar=dict(
+            title=None,
+            orientation="h",
+            x=0.5,
+            y=-0.25,  # ✅ Move the label up slightly (was -0.3)
+            xanchor="center",
+            yanchor="bottom"
+        ),
+        margin=dict(t=10, b=0, l=0, r=0),  # ✅ Reduce margins
+    )
 
-# ✅ Ensure zoom/pan functions are inside the dark area of the map
-st.plotly_chart(fig_map, use_container_width=True, config={
-    "displayModeBar": True, 
-    "modeBarButtonsToAdd": ["zoom2d", "pan2d", "resetScale2d"],  
-    "displaylogo": False
-})
+    # ✅ Ensure zoom/pan functions are inside the dark area of the map
+    st.plotly_chart(fig_map, use_container_width=True, config={
+        "displayModeBar": True, 
+        "modeBarButtonsToAdd": ["zoom2d", "pan2d", "resetScale2d"],  
+        "displaylogo": False
+    })
+
 
 
 
