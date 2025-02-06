@@ -67,6 +67,9 @@ variables = [
     # ✅ NEW: Added Cost of Living as an available variable
 ]
 
+map_variables = variables + ["Cost of Living"]  # ✅ NEW: Separate list for the map
+
+
 
 # 🚀 Normalize & Rank Data
 def normalize_and_rank(df):
@@ -124,7 +127,7 @@ for var in selected_vars:
 
 
 # 🏆 Compute Suitability Score
-df_filtered["Retirement Suitability"] = df_filtered[selected_vars].mean(axis=1, skipna=True)
+df_filtered["Retirement Suitability"] = df_filtered[selected_vars].drop(columns=["Cost of Living"], errors="ignore").mean(axis=1, skipna=True)
 
 # 📈 Plot
 if df_filtered.empty:
@@ -227,7 +230,7 @@ else:
 st.markdown("<h3 style='margin-bottom: -10px;'>🌍 Global View: Select Variable to Display on the Map</h3>", unsafe_allow_html=True)
 
 # ✅ Move dropdown back to the left & ensure it works
-selected_map_var = st.selectbox("Choose a variable to visualize", variables, key="map_variable")
+selected_map_var = st.selectbox("Choose a variable to visualize", map_variables, key="map_variable")
 
 # ✅ Wrap dropdown & map inside a container to fix spacing & layout
 map_container = st.container()
