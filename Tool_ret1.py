@@ -131,17 +131,28 @@ else:
     )
     
     # ✅ Bubble size reduction and text over bubbles
-    fig.update_traces(marker=dict(size=10), textposition="top center")
+    fig.update_traces(marker=dict(size=8), textposition="top center")
     
     # ✅ Dark background and gridline styling
     fig.update_layout(
         plot_bgcolor="black",
         paper_bgcolor="black",
         title=dict(font=dict(color="white")),
-        xaxis=dict(gridcolor="rgba(255, 255, 255, 0.3)", linecolor="white", tickfont=dict(color="white")),
-        yaxis=dict(gridcolor="rgba(255, 255, 255, 0.3)", linecolor="white", tickfont=dict(color="white")),
+        xaxis=dict(
+            showgrid=True,  # ✅ Enables vertical grid lines
+            gridcolor="rgba(255, 255, 255, 0.3)",  # ✅ Same color as horizontal grid
+            linecolor="white",
+            tickfont=dict(color="white")
+        ),
+        yaxis=dict(
+            showgrid=True,  # ✅ Ensures horizontal grid stays
+            gridcolor="rgba(255, 255, 255, 0.3)",  # ✅ Same color
+            linecolor="white",
+            tickfont=dict(color="white")
+        ),
         legend=dict(font=dict(color="white"))
     )
+
 
     st.plotly_chart(fig, use_container_width=True)
 
