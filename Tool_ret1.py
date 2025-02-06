@@ -116,8 +116,20 @@ def normalize_and_categorize(df, variables):
             # Normalize all variables (except missing values remain as NaN)
             min_val = df[var].min()
             max_val = df[var].max()
-            if min_val != max_val:  # Avoid division by zero
+            
+            # Special case for Openness & Natural Scenery (ranking transformation)
+            if var in ["Openness", "Natural Scenery"]:
+                df[var] = ((max_val - df[var]) / (max_val - min_val)) * 100  # Convert rank to 0-100 scale (1 = 100, worst = 0)
+                
+                # Create categorical rankings (1-5) using rank normalization
+                df[f"{var}_Category"] = pd.qcut(
+                    df[var].rank(method='min', ascending=False, na_option='bottom'),  
+                    q=5, labels=[5, 4, 3, 2, 1], duplicates="drop"
+                )
+                
+            elif min_val != max_val:  # Avoid division by zero
                 df[var] = (df[var] - min_val) / (max_val - min_val) * 100
+
             
             # Define reversed scales (lower values = better)
             inverse_vars = ["Pollution", "Natural Disaster"]
@@ -192,11 +204,14 @@ if not selected_vars:
 # Start with full dataset
 df_filtered = data.copy()
 
-# Apply slider filters based on rank categories
+# Apply slider filters using category rankings (1-5) for all variables, including Openness & Scenery
 for var in selected_vars:
-    max_category = sliders[var]
+    max_category = sliders[var]  # Slider value (1-5)
     category_col = f"{var}_Category"
-    df_filtered = df_filtered[df_filtered[category_col].astype(int) <= max_category]
+
+    if category_col in df_filtered.columns:
+        df_filtered = df_filtered[df_filtered[category_col].astype(float) <= max_category]
+
 
 # Ensure selected variables exist and retrieve their actual values (0-100)
 real_value_vars = [var for var in selected_vars if var in data.columns]
@@ -257,20 +272,22 @@ if exclude_incomplete:
 
 
 # Scatter Plot
-# Ensure correct hover data references to _Category columns
-hover_data_adjusted = {f"{var}_Category": ':.2f' for var in selected_vars if f"{var}_Category" in df_selected.columns}
-
-# Fix hover data: Show actual values, ensuring no duplicates
+# Ensure correct hover data references to transformed values
 hover_data_adjusted = {
     "Continent": True,  # Ensure Continent appears first
     "Country": True,  # Then Country
     "Retirement Suitability": ':.2f'  # Round suitability score
 }
 
+# Ensure Openness and Natural Scenery display the normalized 0-100 score
+for var in real_value_vars:
+    if var in df_selected.columns:
+        hover_data_adjusted[var] = ':.2f'  # Display transformed 0-100 value
+
 # Add real values (0-100) for selected variables, ensuring no duplicates
 for var in real_value_vars:
     if var in df_selected.columns:  # Ensure it's already in df_selected to prevent conflicts
-        hover_data_adjusted = {var: (':.2f' if var in df_selected.columns else None) for var in real_value_vars}
+        hover_data_adjusted[var] = ':.2f'  # Keep real values in hover box
 
 
 fig_scatter = px.scatter(
