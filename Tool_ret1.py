@@ -119,11 +119,18 @@ def normalize_and_categorize(df, variables):
                 max_rank = df[var].max()
                 df[var] = ((max_rank - df[var]) / (max_rank - min_rank)) * 100  # Normalize (1 = 100, worst = 0)
             
-                # Assign ranking categories (1-5) like other variables (higher is better)
-                df[f"{var}_Category"] = pd.qcut(
-                    df[var].rank(method='min', ascending=False, na_option='bottom'),  
-                    q=5, labels=[5, 4, 3, 2, 1], duplicates="drop"
-                )
+                # Ensure at least 5 unique values exist before applying qcut
+                if df[var].nunique() >= 5:
+                    df[f"{var}_Category"] = pd.qcut(
+                        df[var].rank(method='min', ascending=False, na_option='bottom'),  
+                        q=5, labels=[5, 4, 3, 2, 1], duplicates="drop"
+                    )
+                else:
+                    df[f"{var}_Category"] = pd.cut(
+                        df[var].rank(method='min', ascending=False, na_option='bottom'),
+                        bins=5, labels=[5, 4, 3, 2, 1], include_lowest=True
+                    )
+
 
 
             else:  # Standard normalization
@@ -210,10 +217,11 @@ df_filtered = data.copy()
 for var in selected_vars:
     max_category = sliders[var]  # Slider value (1-5)
 
-    # Use category-based filtering for Openness & Natural Scenery (now ranked 1-5)
+    # Ensure the category column exists before filtering
     category_col = f"{var}_Category"
-    if category_col in df_filtered.columns:
-        df_filtered = df_filtered[df_filtered[category_col].astype(int) <= max_category]
+    if category_col in df_filtered.columns and df_filtered[category_col].notna().any():
+        df_filtered = df_filtered[df_filtered[category_col].astype(float) <= max_category]
+
 
 
 
