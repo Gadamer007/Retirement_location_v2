@@ -137,13 +137,13 @@ else:
     fig.update_layout(
         plot_bgcolor="black",
         paper_bgcolor="black",
-        title=dict(font=dict(color="white")),
-        xaxis=dict(
-            showgrid=True,  # ✅ Enables vertical grid lines
-            gridcolor="rgba(255, 255, 255, 0.3)",  # ✅ Same color as horizontal grid
-            linecolor="white",
-            tickfont=dict(color="white")
+        title=dict(
+            text="Retirement Suitability vs Cost of Living",  # ✅ Explicitly set title
+            font=dict(color="white", size=26),  # ✅ Increase font size (default ~24, so +2 units)
+            x=0.5,  # ✅ Center title horizontally
+            xanchor="center"  # ✅ Ensure title stays centered
         ),
+
         yaxis=dict(
             showgrid=True,  # ✅ Ensures horizontal grid stays
             gridcolor="rgba(255, 255, 255, 0.3)",  # ✅ Same color
