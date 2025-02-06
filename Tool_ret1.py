@@ -112,99 +112,38 @@ def normalize_and_categorize(df, variables):
         if var in df.columns:
             df[var] = pd.to_numeric(df[var], errors='coerce')  # Ensure numeric
             df[var] = df[var].replace([np.inf, -np.inf], np.nan)  # Remove infinite values but keep NaN
-            
+
             # Normalize all variables (except missing values remain as NaN)
             min_val = df[var].min()
             max_val = df[var].max()
-            
-            # Special case for Openness & Natural Scenery (ranking transformation)
-            if var in ["Openness", "Natural Scenery"]:
-                min_rank = df[var].min()
-                max_rank = df[var].max()
-                
-                # Convert rank to 0-100 scale (1 = 100, worst = 0)
-                df[var] = ((max_rank - df[var]) / (max_rank - min_rank)) * 100  
-            
-                # Ensure transformed values are used for plotting & averaging
-                df[var] = df[var].round(2)  # Keep 2 decimal places for clarity
-            
-            else:
-                if min_val != max_val:  # Avoid division by zero
-                    df[var] = (df[var] - min_val) / (max_val - min_val) * 100
-            
-            # Reverse Pollution normally (low is good, high is bad)
-            # Reverse Pollution so that lower values (clean air) = better
+
+            # Special case for variables using rankings
+            if var in ["Openness", "Natural Scenery", "Natural Disaster"]:
+                df[var] = df[var].rank(pct=True) * 100  # Convert rank to percentile scale (0-100)
+
+            # Pollution: Inverted (cleaner air = better)
             if var == "Pollution":
-                min_pollution = df[var].min()
-                max_pollution = df[var].max()
-                
-                df[var] = ((max_pollution - df[var]) / (max_pollution - min_pollution)) * 100  # Cleaner air = higher score
+                df[var] = ((df[var].max() - df[var]) / (df[var].max() - df[var].min())) * 100  # Cleaner air = higher score
 
-            
-            # Reverse Natural Disaster to ensure "safer = better"
+            # Natural Disaster: Inverted (safer = better)
             if var == "Natural Disaster":
-                df[var] = df[var].rank(pct=True) * 100  # Convert rank to 0-100 percentile-based scaling (safest = 100)
-                
-                threshold = np.percentile(df[var].dropna(), (6 - max_category) * 20)  # Get top 20%, 40%, etc.
-                df_filtered = df_filtered[df_filtered[var] >= threshold]  # Keep top safest countries
+                df[var] = ((df[var].max() - df[var]) / (df[var].max() - df[var].min())) * 100  # Lower disaster risk = higher score
 
-            
+            # Categorize into 5 groups for filtering
             try:
-                # Variables where HIGH values are BETTER (rank from high to low)
-                direct_scale_vars = ["Safety", "Healthcare", "Political Stability", "Climate", "Openness", "Natural Scenery"]
-                
-                # Variables where LOW values are BETTER (rank from low to high)
-                inverse_scale_vars = ["Pollution", "Natural Disaster"]
-            
-                if var in inverse_scale_vars:
-                    df[f"{var}_Category"] = pd.qcut(
-                        df[var].rank(method='min', ascending=False, na_option='bottom'),  # Lower values ranked higher
-                        q=5, labels=[1, 2, 3, 4, 5], duplicates="drop"
-                    )
+                inverse_vars = ["Pollution", "Natural Disaster"]
+                if var in inverse_vars:
+                    df[f"{var}_Category"] = pd.qcut(df[var].rank(method='min', ascending=False, na_option='bottom'), 
+                                                    q=5, labels=[1, 2, 3, 4, 5], duplicates="drop")
                 else:
-                    df[f"{var}_Category"] = pd.qcut(
-                        df[var].rank(method='min', ascending=True, na_option='bottom'),  # Higher values ranked higher
-                        q=5, labels=[5, 4, 3, 2, 1], duplicates="drop"  # Reverse labels: 1 = best, 5 = worst
-                    )
+                    df[f"{var}_Category"] = pd.qcut(df[var].rank(method='min', ascending=True, na_option='bottom'),  
+                                                    q=5, labels=[5, 4, 3, 2, 1], duplicates="drop")
             except ValueError:
-                df[f"{var}_Category"] = pd.cut(
-                    df[var].rank(method='min', ascending=(var in inverse_scale_vars), na_option='bottom'),
-                    bins=5, labels=[1, 2, 3, 4, 5] if var in inverse_scale_vars else [5, 4, 3, 2, 1],
-                    include_lowest=True
-                )
-
-            
-            # Define reversed scales (lower values = better)
-            inverse_vars = ["Pollution", "Natural Disaster"]
-            
-            if var in inverse_vars:
-                df[var] = 100 - df[var]  # Invert values (higher becomes worse)
-
-            try:
-                # Variables where HIGH values are BETTER (rank from high to low)
-                direct_scale_vars = ["Safety", "Healthcare", "Political Stability", "Climate", "Openness", "Natural Scenery"]
-                
-                # Variables where LOW values are BETTER (rank from low to high)
-                inverse_scale_vars = ["Pollution", "Natural Disaster"]
-            
-                if var in inverse_scale_vars:
-                    df[f"{var}_Category"] = pd.qcut(
-                        df[var].rank(method='min', ascending=False, na_option='bottom'),  # Lower values ranked higher
-                        q=5, labels=[1, 2, 3, 4, 5], duplicates="drop"
-                    )
-                else:
-                    df[f"{var}_Category"] = pd.qcut(
-                        df[var].rank(method='min', ascending=True, na_option='bottom'),  # Higher values ranked higher
-                        q=5, labels=[5, 4, 3, 2, 1], duplicates="drop"  # Reverse labels: 1 = best, 5 = worst
-                    )
-            except ValueError:
-                df[f"{var}_Category"] = pd.cut(
-                    df[var].rank(method='min', ascending=(var in inverse_scale_vars), na_option='bottom'),
-                    bins=5, labels=[1, 2, 3, 4, 5] if var in inverse_scale_vars else [5, 4, 3, 2, 1],
-                    include_lowest=True
-                )
-
+                df[f"{var}_Category"] = pd.cut(df[var].rank(method='min', ascending=(var in inverse_vars), na_option='bottom'),
+                                               bins=5, labels=[1, 2, 3, 4, 5] if var in inverse_vars else [5, 4, 3, 2, 1],
+                                               include_lowest=True)
     return df
+
 
 
 
@@ -251,15 +190,13 @@ df_filtered = data.copy()
 for var in selected_vars:
     max_category = sliders[var]  # Slider value (1-5)
 
-    if var in ["Openness", "Natural Scenery"]:
-        df[var] = df[var].rank(pct=True) * 100  # Convert rank to 0-100 percentile-based scaling
-        
-        threshold = np.percentile(df[var].dropna(), (6 - max_category) * 20)  # Get top 20%, 40%, etc.
-        df_filtered = df_filtered[df_filtered[var] >= threshold]  # Keep countries above threshold
-
+    if var in ["Openness", "Natural Scenery", "Natural Disaster"]:
+        threshold = np.percentile(data[var].dropna(), (6 - max_category) * 20)  # Get top 20%, 40%, etc.
+        df_filtered = df_filtered[df_filtered[var] >= threshold]  # Keep top X% based on slider
     else:
         category_col = f"{var}_Category"
         df_filtered = df_filtered[df_filtered[category_col].astype(int) <= max_category]
+
 
 
 
