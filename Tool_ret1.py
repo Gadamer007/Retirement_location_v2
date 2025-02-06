@@ -7,16 +7,18 @@ from io import BytesIO
 
 st.markdown("""
     <style>
-    /* Adjust sidebar width */
+    /* Increase Sidebar Width */
     [data-testid="stSidebar"] {
-        width: 330px !important;  /* Slightly wider */
+        min-width: 360px !important;  /* Wider sidebar */
+        max-width: 360px !important;
     }
 
     /* Reduce font size for checkboxes (variable labels) */
     [data-testid="stSidebar"] label {
-        font-size: 9px !important;  /* Smaller text */
+        font-size: 11px !important;  /* Smaller text */
         font-weight: 500 !important; /* Keep labels readable */
         margin-bottom: -10px !important; /* Reduce space between checkbox and slider */
+        white-space: nowrap !important; /* Prevent text from wrapping */
     }
 
     /* Reduce space between checkbox and slider */
@@ -29,12 +31,13 @@ st.markdown("""
         margin-bottom: 10px !important; /* More spacing between sliders */
     }
 
-    /* Reduce font size for checkboxes to match slider labels */
-    [data-testid="stCheckbox"] {
-        font-size: 11px !important; /* Keep checkboxes consistent */
+    /* Ensure checkboxes and sliders have more horizontal space */
+    [data-testid="stSidebarContent"] {
+        padding-right: 15px !important; /* Adds some padding to prevent text cutoff */
     }
     </style>
     """, unsafe_allow_html=True)
+
 
 
 
