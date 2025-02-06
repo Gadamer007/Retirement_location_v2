@@ -113,12 +113,18 @@ def normalize_and_categorize(df, variables):
             df[var] = pd.to_numeric(df[var], errors='coerce')  # Ensure numeric
             df[var] = df[var].replace([np.inf, -np.inf], np.nan)  # Remove infinite values but keep NaN
             
-            # Normalize all variables (except missing values remain as NaN)
-            min_val = df[var].min()
-            max_val = df[var].max()
-            if min_val != max_val:  # Avoid division by zero
-                df[var] = (df[var] - min_val) / (max_val - min_val) * 100
-            
+            # Handle special case: Reverse ranking for Openness & Natural Scenery
+            if var in ["Openness", "Natural Scenery"]:
+                min_rank = df[var].min()
+                max_rank = df[var].max()
+                df[var] = ((max_rank - df[var]) / (max_rank - min_rank)) * 100  # Invert scale (Rank 1 → 100)
+
+            else:  # Standard normalization
+                min_val = df[var].min()
+                max_val = df[var].max()
+                if min_val != max_val:  # Avoid division by zero
+                    df[var] = (df[var] - min_val) / (max_val - min_val) * 100
+
             # Define reversed scales (lower values = better)
             inverse_vars = ["Pollution", "Natural Disaster"]
             
@@ -150,6 +156,7 @@ def normalize_and_categorize(df, variables):
                 )
 
     return df
+
 
 
 
@@ -256,16 +263,21 @@ if exclude_incomplete:
     df_selected = df_selected[df_selected.isna().sum(axis=1) <= 2]
 
 
-# Scatter Plot
-# Ensure correct hover data references to _Category columns
-hover_data_adjusted = {f"{var}_Category": ':.2f' for var in selected_vars if f"{var}_Category" in df_selected.columns}
-
-# Fix hover data: Show actual values, ensuring no duplicates
+# Ensure correct hover data references to transformed values
 hover_data_adjusted = {
     "Continent": True,  # Ensure Continent appears first
     "Country": True,  # Then Country
     "Retirement Suitability": ':.2f'  # Round suitability score
 }
+
+# Ensure Openness and Natural Scenery display the normalized 0-100 score
+for var in real_value_vars:
+    if var in df_selected.columns:
+        if var in ["Openness", "Natural Scenery"]:
+            hover_data_adjusted[var] = ':.2f'  # Display the transformed 0-100 value
+        else:
+            hover_data_adjusted[var] = ':.2f'  # Keep regular formatting
+
 
 # Add real values (0-100) for selected variables, ensuring no duplicates
 for var in real_value_vars:
