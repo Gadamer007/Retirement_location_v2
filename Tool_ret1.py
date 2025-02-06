@@ -192,12 +192,17 @@ for var in selected_vars:
     max_category = sliders[var]  # Slider value (1-5)
 
     if var in ["Openness", "Natural Scenery", "Natural Disaster"]:
-        df_filtered[f"{var}_Category"] = pd.qcut(df_filtered[var], q=5, labels=[1, 2, 3, 4, 5], duplicates="drop")
-        
-        # 🔥 Fix: Fill NaNs with a high category to prevent conversion issues
-        df_filtered[f"{var}_Category"] = df_filtered[f"{var}_Category"].cat.add_categories(5).fillna(5)
+        try:
+            df_filtered[f"{var}_Category"] = pd.qcut(df_filtered[var], q=5, labels=[1, 2, 3, 4, 5], duplicates="drop")
+        except ValueError:
+            # 🔥 If qcut fails (not enough unique values), use pd.cut as fallback
+            df_filtered[f"{var}_Category"] = pd.cut(df_filtered[var], bins=5, labels=[1, 2, 3, 4, 5], include_lowest=True)
     
-        df_filtered = df_filtered[df_filtered[f"{var}_Category"].astype(int) <= max_category]
+        # 🔥 Convert to numeric to avoid NaN casting issues
+        df_filtered[f"{var}_Category"] = pd.to_numeric(df_filtered[f"{var}_Category"], errors="coerce").fillna(5).astype(int)
+    
+        # 🔥 Apply the slider filter
+        df_filtered = df_filtered[df_filtered[f"{var}_Category"] <= max_category]
 
     else:
         category_col = f"{var}_Category"
