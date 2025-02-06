@@ -17,7 +17,7 @@ st.markdown("""
     """, unsafe_allow_html=True)
 
 # 🎯 Load Dataset
-@st.cache_data
+# 🚀 Temporarily disable caching to force a fresh dataset reload
 def load_data():
     url = "https://raw.githubusercontent.com/Gadamer007/Retirement_location_v2/main/Ret_data.xlsx"
     response = requests.get(url)
@@ -124,16 +124,21 @@ if df_filtered.empty:
     st.error("No data available to plot. Adjust filter settings.")
 else:
     # 📌 Define hover information (Ensures all 9 variables appear with NA for missing)
-    hover_data = {
-        "Continent": True,  # 🌍 Show Continent
-        "Country": True,  # 🏳️ Show Country
-        "Retirement Suitability": ':.2f',  # 🏆 Show Retirement Score (rounded)
-        "Cost of Living": ':.2f',  # 💰 Show Cost of Living (rounded)
-    }
+    # 🔧 Fix missing values (Convert NaN to "NA" explicitly before passing to hover data)
+    df_filtered = df_filtered.fillna("NA")
     
-    # ➕ Add all 9 selected variables (round to 2 decimals or show NA if missing)
-    for var in variables:
-        hover_data[var] = ':.2f' if var in df_filtered.columns else True  # ✅ Rounds to 2 decimals
+    # 📌 Define hover information (Ensures all 9 variables appear with "NA" for missing)
+    hover_data = {
+        "Continent": True,
+        "Country": True,
+        "Retirement Suitability": ':.2f',
+        "Cost of Living": ':.2f',
+    }
+
+# ➕ Add all 9 selected variables (round to 2 decimals or show "NA" if missing)
+for var in variables:
+    hover_data[var] = ':.2f' if var in df_filtered.columns else True  # ✅ Rounds to 2 decimals
+
     
     # 📈 Updated Scatter Plot
     fig = px.scatter(
