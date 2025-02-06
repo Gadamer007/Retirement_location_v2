@@ -150,18 +150,23 @@ data = normalize_and_categorize(data, variables)  # Ensures Climate and other va
 # Sidebar layout using columns for a more compact arrangement
 cols = st.sidebar.columns(2)  # Two-column layout
 i = 0
+selected_vars = []  # Reset selected variables list
+sliders = {}  # Reset sliders dictionary
 
 for label in variables:
     category_col = f"{label}_Category"
     if category_col in data.columns:
         with cols[i % 2]:  # Each variable + slider stays together
-            st.markdown(f"<div style='font-size:13px; font-weight:600;'>{label}</div>", unsafe_allow_html=True)
-            sliders[label] = st.slider(
-                "",  # No duplicate label
-                1, 5, 5, 
-                key=f"slider_{label}"
-            )
+            checked = st.checkbox(label, value=True, key=f"check_{label}")  # Restore checkboxes
+            if checked:  # Only show slider if checkbox is selected
+                sliders[label] = st.slider(
+                    "",  # No duplicate label
+                    1, 5, 5, 
+                    key=f"slider_{label}"
+                )
+                selected_vars.append(label)  # Add to selected variables list
         i += 1  # Move to next column
+
 
 
 
