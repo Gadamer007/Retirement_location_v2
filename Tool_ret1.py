@@ -223,7 +223,7 @@ else:
 
 # 📌 Reduce space between dropdown and map
 # 🌍 Global View Title
-st.markdown("<h3 style='margin-bottom: -10px;'>🌍 Global View: Select Variable to Display on the Map</h3>", unsafe_allow_html=True)
+st.markdown("<h3 style='margin-bottom: -20px;'>🌍 Global View: Select Variable to Display on the Map</h3>", unsafe_allow_html=True)
 
 # ✅ Move dropdown back to the left & reduce spacing
 selected_map_var = st.selectbox("Choose a variable to visualize", variables, key="map_variable")
@@ -231,9 +231,10 @@ selected_map_var = st.selectbox("Choose a variable to visualize", variables, key
 # ✅ Reduce extra spacing below the dropdown
 st.markdown("""
     <style>
-    div[data-testid='stSelectbox'] {margin-bottom: -50px !important;}
+    div[data-testid='stSelectbox'] {margin-bottom: -80px !important;}
     </style>
 """, unsafe_allow_html=True)
+
  
 
 
@@ -268,7 +269,7 @@ fig_map.update_layout(
 # ✅ Ensure the map doesn't overlap with other elements
 st.markdown("<div style='margin-top: -20px;'></div>", unsafe_allow_html=True)  # Move map closer to dropdown
 # ✅ Reduce top margin before rendering the map
-st.markdown("<div style='margin-top: -60px;'></div>", unsafe_allow_html=True)  
+st.markdown("<div style='margin-top: -90px;'></div>", unsafe_allow_html=True)  
 st.plotly_chart(fig_map, use_container_width=True)
 
 
