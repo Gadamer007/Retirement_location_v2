@@ -113,32 +113,12 @@ def normalize_and_categorize(df, variables):
             df[var] = pd.to_numeric(df[var], errors='coerce')  # Ensure numeric
             df[var] = df[var].replace([np.inf, -np.inf], np.nan)  # Remove infinite values but keep NaN
             
-            # Handle special case: Reverse ranking for Openness & Natural Scenery
-            if var in ["Openness", "Natural Scenery"]:
-                min_rank = df[var].min()
-                max_rank = df[var].max()
-                df[var] = ((max_rank - df[var]) / (max_rank - min_rank)) * 100  # Normalize (1 = 100, worst = 0)
+            # Normalize all variables (except missing values remain as NaN)
+            min_val = df[var].min()
+            max_val = df[var].max()
+            if min_val != max_val:  # Avoid division by zero
+                df[var] = (df[var] - min_val) / (max_val - min_val) * 100
             
-                # Ensure at least 5 unique values exist before applying qcut
-                if df[var].nunique() >= 5:
-                    df[f"{var}_Category"] = pd.qcut(
-                        df[var].rank(method='min', ascending=False, na_option='bottom'),  
-                        q=5, labels=[5, 4, 3, 2, 1], duplicates="drop"
-                    )
-                else:
-                    df[f"{var}_Category"] = pd.cut(
-                        df[var].rank(method='min', ascending=False, na_option='bottom'),
-                        bins=5, labels=[5, 4, 3, 2, 1], include_lowest=True
-                    )
-
-
-
-            else:  # Standard normalization
-                min_val = df[var].min()
-                max_val = df[var].max()
-                if min_val != max_val:  # Avoid division by zero
-                    df[var] = (df[var] - min_val) / (max_val - min_val) * 100
-
             # Define reversed scales (lower values = better)
             inverse_vars = ["Pollution", "Natural Disaster"]
             
@@ -170,7 +150,6 @@ def normalize_and_categorize(df, variables):
                 )
 
     return df
-
 
 
 
@@ -213,17 +192,11 @@ if not selected_vars:
 # Start with full dataset
 df_filtered = data.copy()
 
-# Apply slider filters using category rankings (1-5) for all variables, including Openness & Scenery
+# Apply slider filters based on rank categories
 for var in selected_vars:
-    max_category = sliders[var]  # Slider value (1-5)
-
-    # Ensure the category column exists before filtering
+    max_category = sliders[var]
     category_col = f"{var}_Category"
-    if category_col in df_filtered.columns and df_filtered[category_col].notna().any():
-        df_filtered = df_filtered[df_filtered[category_col].astype(float) <= max_category]
-
-
-
+    df_filtered = df_filtered[df_filtered[category_col].astype(int) <= max_category]
 
 # Ensure selected variables exist and retrieve their actual values (0-100)
 real_value_vars = [var for var in selected_vars if var in data.columns]
@@ -283,21 +256,16 @@ if exclude_incomplete:
     df_selected = df_selected[df_selected.isna().sum(axis=1) <= 2]
 
 
-# Ensure correct hover data references to transformed values
+# Scatter Plot
+# Ensure correct hover data references to _Category columns
+hover_data_adjusted = {f"{var}_Category": ':.2f' for var in selected_vars if f"{var}_Category" in df_selected.columns}
+
+# Fix hover data: Show actual values, ensuring no duplicates
 hover_data_adjusted = {
     "Continent": True,  # Ensure Continent appears first
     "Country": True,  # Then Country
     "Retirement Suitability": ':.2f'  # Round suitability score
 }
-
-# Ensure Openness and Natural Scenery display the normalized 0-100 score
-for var in real_value_vars:
-    if var in df_selected.columns:
-        if var in ["Openness", "Natural Scenery"]:
-            hover_data_adjusted[var] = ':.2f'  # Display the transformed 0-100 value
-        else:
-            hover_data_adjusted[var] = ':.2f'  # Keep regular formatting
-
 
 # Add real values (0-100) for selected variables, ensuring no duplicates
 for var in real_value_vars:
@@ -335,6 +303,7 @@ fig_scatter.update_layout(
 )
 
 st.plotly_chart(fig_scatter, use_container_width=True)
+
 
 
 
