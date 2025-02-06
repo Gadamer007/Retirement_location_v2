@@ -222,13 +222,15 @@ else:
     st.plotly_chart(fig, use_container_width=True)
 
 # 📌 Reduce space between dropdown and map
+# 🌍 Global View Title
 st.subheader("🌍 Global View: Select Variable to Display on the Map")
 
-col1, col2, col3 = st.columns([1, 6, 1])  # ✅ Center align dropdown, reduce space
-with col2:
-    selected_map_var = st.selectbox("Choose a variable to visualize", variables, key="map_variable")
+# ✅ Move dropdown back to the left & reduce spacing
+selected_map_var = st.selectbox("Choose a variable to visualize", variables, key="map_variable")
 
-st.markdown("<style>div[data-testid='stSelectbox'] {margin-bottom: -35px;}</style>", unsafe_allow_html=True)  # ✅ Adjust spacing
+# ✅ Reduce space between dropdown and map
+st.markdown("<style>div[data-testid='stSelectbox'] {margin-bottom: -50px;}</style>", unsafe_allow_html=True)  # Increased negative margin
+
 
 
 # ✅ Filtered Data for the Map (Only Countries Being Displayed)
@@ -254,7 +256,7 @@ fig_map = px.choropleth(
 fig_map.update_layout(
     geo=dict(showcoastlines=True, showland=True, landcolor="black"),
     title=dict(font=dict(color="white"), x=0.5, xanchor="center"),  # ✅ Centered Title
-    coloraxis_colorbar=dict(title=f"{selected_map_var} Score"),
+    coloraxis_colorbar=dict(title="Score"),  # ✅ Simplify legend to just "Score"
 )
 
 # 🎯 Display the Map
