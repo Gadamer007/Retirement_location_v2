@@ -137,13 +137,14 @@ else:
     hover_data = {
         "Continent": True,
         "Country": True,
-        "Retirement Suitability": ':.2f',
-        "Cost of Living": ':.2f',
+        "Retirement Suitability": ":.2f",
+        "Cost of Living": ":.2f",
     }
     
-    # ➕ Add all 9 variables, ensuring they are rounded (or "NA" if missing)
+    # ➕ Add all 9 variables, ensuring they are rounded to 2 decimals (or "NA" if missing)
     for var in variables:
-        hover_data[var] = df_filtered[var].apply(lambda x: f"{x:.2f}" if pd.notna(x) else "NA")
+        hover_data[var] = df_filtered[var].map(lambda x: f"{x:.2f}" if pd.notna(x) else "NA")
+
 
     
     # 📈 Updated Scatter Plot
