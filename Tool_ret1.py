@@ -117,7 +117,14 @@ def normalize_and_categorize(df, variables):
             if var in ["Openness", "Natural Scenery"]:
                 min_rank = df[var].min()
                 max_rank = df[var].max()
-                df[var] = ((max_rank - df[var]) / (max_rank - min_rank)) * 100  # Invert scale (Rank 1 → 100)
+                df[var] = ((max_rank - df[var]) / (max_rank - min_rank)) * 100  # Normalize (1 = 100, worst = 0)
+            
+                # Assign ranking categories (1-5) like other variables (higher is better)
+                df[f"{var}_Category"] = pd.qcut(
+                    df[var].rank(method='min', ascending=False, na_option='bottom'),  
+                    q=5, labels=[5, 4, 3, 2, 1], duplicates="drop"
+                )
+
 
             else:  # Standard normalization
                 min_val = df[var].min()
@@ -199,17 +206,15 @@ if not selected_vars:
 # Start with full dataset
 df_filtered = data.copy()
 
-# Apply slider filters using actual 0-100 transformed values instead of category ranks
+# Apply slider filters using category rankings (1-5) for all variables, including Openness & Scenery
 for var in selected_vars:
     max_category = sliders[var]  # Slider value (1-5)
 
-    if var in ["Openness", "Natural Scenery"]:
-        # Convert slider value (1-5) to percentage threshold (20% per category)
-        threshold = (6 - max_category) * 20  # 5 -> 20%, 4 -> 40%, ..., 1 -> 100%
-        df_filtered = df_filtered[df_filtered[var] >= threshold]  # Keep countries above threshold
-    else:
-        category_col = f"{var}_Category"
+    # Use category-based filtering for Openness & Natural Scenery (now ranked 1-5)
+    category_col = f"{var}_Category"
+    if category_col in df_filtered.columns:
         df_filtered = df_filtered[df_filtered[category_col].astype(int) <= max_category]
+
 
 
 # Ensure selected variables exist and retrieve their actual values (0-100)
