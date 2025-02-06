@@ -27,7 +27,7 @@ def load_data():
 
 # 📌 Load and Preprocess Data
 data = load_data()
-st.write(data[data["Country"] == "Hong Kong (China)"])
+# st.write(data[data["Country"] == "Hong Kong (China)"])
 data["Country"] = data["Country"].str.strip().str.title()
 
 # 🌎 Define Country-to-Continent Mapping
@@ -146,9 +146,9 @@ else:
     
     # ➕ Manually add selected variables without conflicting with the DataFrame
     for var in variables:
-        if var in df_filtered.columns:  # Ensure the column exists in DataFrame
-            df_filtered[var] = df_filtered[var].astype(float).round(2)  # ✅ Round decimals
-            hover_data[var] = df_filtered[var].apply(lambda x: f"{x:.2f}" if pd.notna(x) else "NA").astype(str)  # ✅ Convert to string
+    if var in df_filtered.columns:
+        df_filtered[var] = pd.to_numeric(df_filtered[var], errors="coerce").round(2)  # ✅ Force numeric type safely
+        hover_data[var] = df_filtered[var].apply(lambda x: f"{x:.2f}" if pd.notna(x) else "NA")  # ✅ Ensure string conversion only on `hover_data`
 
 
     
