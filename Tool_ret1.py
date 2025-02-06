@@ -221,6 +221,42 @@ else:
 
     st.plotly_chart(fig, use_container_width=True)
 
+# 📌 Section: Map for Selected Variable
+st.subheader("🌍 Global View: Select Variable to Display on the Map")
+
+# 🎯 Dropdown to Choose a Variable
+selected_map_var = st.selectbox("Choose a variable to visualize", variables)
+
+# ✅ Filtered Data for the Map (Only Countries Being Displayed)
+map_df = df_filtered[["Country", "Continent", selected_map_var]].copy()
+
+# 🛠 Ensure numerical data and replace NaNs with a neutral color
+map_df[selected_map_var] = pd.to_numeric(map_df[selected_map_var], errors="coerce")
+map_df[selected_map_var] = map_df[selected_map_var].fillna(0)  # Missing values = neutral
+
+# 📌 Create the Choropleth Map
+fig_map = px.choropleth(
+    map_df,
+    locations="Country",
+    locationmode="country names",
+    color=selected_map_var,
+    title=f"{selected_map_var} by Country",
+    color_continuous_scale="RdYlGn",  # ✅ Red (low) → Yellow (medium) → Green (high)
+    labels={selected_map_var: f"{selected_map_var} (0-100)"},
+    template="plotly_dark"
+)
+
+# 📌 Update Map Layout for Better Readability
+fig_map.update_layout(
+    geo=dict(showcoastlines=True, showland=True, landcolor="black"),
+    title=dict(font=dict(color="white"), x=0.5, xanchor="center"),  # ✅ Centered Title
+    coloraxis_colorbar=dict(title=f"{selected_map_var} Score"),
+)
+
+# 🎯 Display the Map
+st.plotly_chart(fig_map, use_container_width=True)
+
+
 
 
 
