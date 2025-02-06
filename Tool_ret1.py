@@ -160,8 +160,8 @@ else:
     # 📈 Updated Scatter Plot
     # 🌍 Define Fixed Colors for Continents
     continent_colors = {
-        "America": "#1f77b4",   # Blue
-        "Europe": "#ff7f0e",    # Orange
+        "America": "#ff7f0e",   # Blue
+        "Europe": "#1f77b4",    # Orange 
         "Asia": "#2ca02c",      # Green
         "Africa": "#d62728",    # Red
         "Oceania": "#9467bd"    # Purple
