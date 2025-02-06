@@ -56,8 +56,8 @@ data['Continent'] = data['Country'].map(continent_mapping)
 st.title("Best Countries for Early Retirement: Where to Retire Abroad?")
 
 # Sidebar Filters
-# Sidebar Filters
 st.sidebar.subheader("Select Variables for Retirement Suitability")
+st.sidebar.markdown("<small>Move slider to the left to drop worst performing countries</small>", unsafe_allow_html=True)
 selected_vars = []
 sliders = {}
 
@@ -119,16 +119,23 @@ def normalize_and_categorize(df, variables):
 # Apply normalization and ranking
 data = normalize_and_categorize(data, variables)  # Ensures Climate and other variables are correctly ranked
 
-# Create sidebar checkboxes and sliders using rank categories
+# Sidebar layout using columns for a more compact arrangement
+cols = st.sidebar.columns(2)  # Two columns for compact display
+i = 0  # Track column index
+
 for label in variables:
     category_col = f"{label}_Category"
     if category_col in data.columns:
-        if st.sidebar.checkbox(label, value=True):
-            sliders[label] = st.sidebar.slider(
-                f"{label}", 
-                1, 5, 5  # Always use 1-5 scale
-            )
-            selected_vars.append(label)
+        with cols[i % 2]:  # Distribute elements across columns
+            if st.checkbox(label, value=True, key=f"check_{label}"):
+                sliders[label] = st.slider(
+                    f"{label}", 
+                    1, 5, 5, 
+                    key=f"slider_{label}"
+                )
+                selected_vars.append(label)
+        i += 1  # Switch to next column
+
 
 
 
