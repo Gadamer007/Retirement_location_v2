@@ -193,6 +193,10 @@ for var in selected_vars:
 
     if var in ["Openness", "Natural Scenery", "Natural Disaster"]:
         df_filtered[f"{var}_Category"] = pd.qcut(df_filtered[var], q=5, labels=[1, 2, 3, 4, 5], duplicates="drop")
+        
+        # 🔥 Fix: Fill NaNs with a high category to prevent conversion issues
+        df_filtered[f"{var}_Category"] = df_filtered[f"{var}_Category"].cat.add_categories(5).fillna(5)
+    
         df_filtered = df_filtered[df_filtered[f"{var}_Category"].astype(int) <= max_category]
 
     else:
