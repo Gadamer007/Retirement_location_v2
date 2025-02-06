@@ -134,7 +134,7 @@ else:
 
     
    
-    # 📌 Ensure hover data correctly displays "NA" for missing values
+    # 📌 Define hover_data explicitly to avoid conflicts with data_frame
     hover_data = {
         "Continent": True,
         "Country": True,
@@ -142,21 +142,26 @@ else:
         "Cost of Living": ":.2f",
     }
     
-    # ➕ Add all 9 variables, rounding to 2 decimals and ensuring "NA" appears for missing values
+    # ➕ Manually add selected variables without conflicting with the DataFrame
     for var in variables:
         hover_data[var] = df_filtered[var].apply(lambda x: f"{x:.2f}" if pd.notna(x) else "NA").astype(str)
-
-
-
     
     # 📈 Updated Scatter Plot
     fig = px.scatter(
-        df_filtered, x="Retirement Suitability", y="Cost of Living", text="Country",
-        color="Continent", title="Retirement Suitability vs Cost of Living",
-        labels={"Cost of Living": "Cost of Living (0 - 100)", "Retirement Suitability": "Retirement Suitability (0 - 100)"},
+        df_filtered, 
+        x="Retirement Suitability", 
+        y="Cost of Living", 
+        text="Country",
+        color="Continent", 
+        title="Retirement Suitability vs Cost of Living",
+        labels={
+            "Cost of Living": "Cost of Living (0 - 100)", 
+            "Retirement Suitability": "Retirement Suitability (0 - 100)"
+        },
         template="plotly_dark",
-        hover_data=hover_data  # ✅ NEW: Adds all 9 variables with rounding
+        hover_data=hover_data  # ✅ NEW: Fixes the duplication issue
     )
+
 
     
     # ✅ Bubble size reduction and text over bubbles
