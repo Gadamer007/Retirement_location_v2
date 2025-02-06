@@ -127,7 +127,8 @@ def normalize_and_categorize(df, variables):
 
             # Natural Disaster: Inverted (safer = better)
             if var == "Natural Disaster":
-                df[var] = ((df[var].max() - df[var]) / (df[var].max() - df[var].min())) * 100  # Lower disaster risk = higher score
+                df[var] = df[var].rank(method="min", ascending=False, pct=True) * 100  # Convert rank to percentile (safest = 100, worst = 0)
+
 
             # Categorize into 5 groups for filtering
             try:
@@ -191,8 +192,9 @@ for var in selected_vars:
     max_category = sliders[var]  # Slider value (1-5)
 
     if var in ["Openness", "Natural Scenery", "Natural Disaster"]:
-        threshold = np.percentile(data[var].dropna(), (6 - max_category) * 20)  # Get top 20%, 40%, etc.
-        df_filtered = df_filtered[df_filtered[var] >= threshold]  # Keep top X% based on slider
+        df_filtered[f"{var}_Category"] = pd.qcut(df_filtered[var], q=5, labels=[1, 2, 3, 4, 5], duplicates="drop")
+        df_filtered = df_filtered[df_filtered[f"{var}_Category"].astype(int) <= max_category]
+
     else:
         category_col = f"{var}_Category"
         df_filtered = df_filtered[df_filtered[category_col].astype(int) <= max_category]
