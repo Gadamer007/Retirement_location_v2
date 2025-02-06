@@ -70,28 +70,37 @@ def normalize_and_rank(df):
     for var in variables:
         if var in df.columns:
             df[var] = pd.to_numeric(df[var], errors="coerce")
-            
-            # Normalize 0-100
             df[var] = df[var].rank(pct=True) * 100  
-            
-            # Reverse scale for "lower is better" variables
-            if var in ["Pollution", "Openness", "Natural Scenery", "Natural Disaster"]:
-                df[var] = 100 - df[var]
 
-            # Rank Categories (5 = Worst, 1 = Best)
-            df[f"{var}_Category"] = pd.qcut(df[var], q=5, labels=[5, 4, 3, 2, 1])
-    
+            if var in ["Pollution", "Openness", "Natural Scenery", "Natural Disaster"]:
+                df[var] = 100 - df[var]  
+
+            df[f"{var}_Category"] = pd.qcut(df[var], q=5, labels=[5, 4, 3, 2, 1])  
+
     return df
 
 data = normalize_and_rank(data)
 
 # 🛠️ Sidebar Filters
 st.sidebar.subheader("Select Variables for Retirement Suitability")
-sliders = {var: st.sidebar.slider(var, 1, 5, 5) for var in variables}
+sliders = {}
+selected_vars = []
+
+cols = st.sidebar.columns(2)  
+for i, var in enumerate(variables):
+    with cols[i % 2]:  
+        checked = st.checkbox(f"**{var}**", value=True, key=f"check_{var}")
+        if checked:
+            sliders[var] = st.slider("", 1, 5, 5, key=f"slider_{var}")
+            selected_vars.append(var)
+
+if not selected_vars:
+    st.error("⚠️ No variables selected. Please check at least one variable.")
+    st.stop()
 
 # 🎯 Apply Filters
 df_filtered = data.copy()
-for var in variables:
+for var in selected_vars:
     df_filtered = df_filtered[df_filtered[f"{var}_Category"].fillna(5).astype(int) <= sliders[var]]
 
 # 📌 Multi-Select Continent Filter
@@ -99,7 +108,12 @@ selected_continents = st.sidebar.multiselect("Select Continents", df_filtered["C
 df_filtered = df_filtered[df_filtered["Continent"].isin(selected_continents)]
 
 # 🏆 Compute Suitability Score
-df_filtered["Retirement Suitability"] = df_filtered[variables].mean(axis=1, skipna=True)
+df_filtered["Retirement Suitability"] = df_filtered[selected_vars].mean(axis=1, skipna=True)
+
+# 🚫 Checkbox to Exclude Incomplete Data
+exclude_incomplete = st.checkbox("Exclude countries with incomplete data (more than 2 N/A)")
+if exclude_incomplete:
+    df_filtered = df_filtered[df_filtered.isna().sum(axis=1) <= 2]
 
 # 📈 Plot
 if df_filtered.empty:
