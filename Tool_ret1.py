@@ -81,39 +81,25 @@ def normalize_and_rank(df):
 
 data = normalize_and_rank(data)
 
-# 🛠️ Sidebar Filters
-st.sidebar.subheader("Select Variables for Retirement Suitability")
-sliders = {}
-selected_vars = []
+# 🏆 Title at the Very Top
+st.title("Best Countries for Early Retirement: Where to Retire Abroad?")
 
-cols = st.sidebar.columns(2)  
-for i, var in enumerate(variables):
-    with cols[i % 2]:  
-        checked = st.checkbox(f"**{var}**", value=True, key=f"check_{var}")
-        if checked:
-            sliders[var] = st.slider("", 1, 5, 5, key=f"slider_{var}")
-            selected_vars.append(var)
-
-if not selected_vars:
-    st.error("⚠️ No variables selected. Please check at least one variable.")
-    st.stop()
-
-# 🎯 Apply Filters
-df_filtered = data.copy()
-for var in selected_vars:
-    df_filtered = df_filtered[df_filtered[f"{var}_Category"].fillna(5).astype(int) <= sliders[var]]
-
-# 📌 Multi-Select Continent Filter
-selected_continents = st.sidebar.multiselect("Select Continents", df_filtered["Continent"].unique(), df_filtered["Continent"].unique())
-df_filtered = df_filtered[df_filtered["Continent"].isin(selected_continents)]
-
-# 🏆 Compute Suitability Score
-df_filtered["Retirement Suitability"] = df_filtered[selected_vars].mean(axis=1, skipna=True)
+# 🌎 Continent Selection Directly Below Title
+st.subheader("🌍 Select Continents to Display")
+selected_continents = st.multiselect(
+    "Select Continents",
+    options=data["Continent"].unique().tolist(),
+    default=data["Continent"].unique().tolist()
+)
+df_filtered = data[data["Continent"].isin(selected_continents)]
 
 # 🚫 Checkbox to Exclude Incomplete Data
 exclude_incomplete = st.checkbox("Exclude countries with incomplete data (more than 2 N/A)")
 if exclude_incomplete:
     df_filtered = df_filtered[df_filtered.isna().sum(axis=1) <= 2]
+
+# 🏆 Compute Suitability Score
+df_filtered["Retirement Suitability"] = df_filtered[variables].mean(axis=1, skipna=True)
 
 # 📈 Plot
 if df_filtered.empty:
@@ -125,6 +111,20 @@ else:
         labels={"Cost of Living": "Cost of Living (0 - 100)", "Retirement Suitability": "Retirement Suitability (0 - 100)"},
         template="plotly_dark"
     )
+    
+    # ✅ Increase bubble size and move text **over** bubbles
+    fig.update_traces(marker=dict(size=12), textposition="middle center")
+    
+    # ✅ Apply dark background and gridline styling
+    fig.update_layout(
+        plot_bgcolor="black",
+        paper_bgcolor="black",
+        title=dict(font=dict(color="white")),
+        xaxis=dict(gridcolor="rgba(255, 255, 255, 0.3)", linecolor="white", tickfont=dict(color="white")),
+        yaxis=dict(gridcolor="rgba(255, 255, 255, 0.3)", linecolor="white", tickfont=dict(color="white")),
+        legend=dict(font=dict(color="white"))
+    )
+
     st.plotly_chart(fig, use_container_width=True)
 
 
