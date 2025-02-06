@@ -27,6 +27,7 @@ def load_data():
 
 # 📌 Load and Preprocess Data
 data = load_data()
+st.write(data[data["Country"] == "Hong Kong (China)"])
 data["Country"] = data["Country"].str.strip().str.title()
 
 # 🌎 Define Country-to-Continent Mapping
@@ -135,6 +136,7 @@ else:
     
    
     # 📌 Define hover_data explicitly to avoid conflicts with data_frame
+    # 📌 Ensure hover data explicitly avoids duplicate column conflicts
     hover_data = {
         "Continent": True,
         "Country": True,
@@ -144,7 +146,11 @@ else:
     
     # ➕ Manually add selected variables without conflicting with the DataFrame
     for var in variables:
-        hover_data[var] = df_filtered[var].apply(lambda x: f"{x:.2f}" if pd.notna(x) else "NA").astype(str)
+        if var in df_filtered.columns:  # Ensure the column exists in DataFrame
+            df_filtered[var] = df_filtered[var].astype(float).round(2)  # ✅ Round decimals
+            hover_data[var] = df_filtered[var].apply(lambda x: f"{x:.2f}" if pd.notna(x) else "NA").astype(str)  # ✅ Convert to string
+
+
     
     # 📈 Updated Scatter Plot
     fig = px.scatter(
