@@ -133,7 +133,8 @@ else:
             df_filtered[col] = df_filtered[col].astype(float).round(2)  # ✅ Round decimals to 2
 
     
-    # 📌 Ensure hover data correctly displays "NA" when values are missing
+   
+    # 📌 Ensure hover data correctly displays "NA" for missing values
     hover_data = {
         "Continent": True,
         "Country": True,
@@ -141,9 +142,10 @@ else:
         "Cost of Living": ":.2f",
     }
     
-    # ➕ Add all 9 variables, ensuring they are rounded to 2 decimals (or "NA" if missing)
+    # ➕ Add all 9 variables, rounding to 2 decimals and ensuring "NA" appears for missing values
     for var in variables:
-        hover_data[var] = df_filtered[var].map(lambda x: f"{x:.2f}" if pd.notna(x) else "NA")
+        hover_data[var] = df_filtered[var].apply(lambda x: f"{x:.2f}" if pd.notna(x) else "NA").astype(str)
+
 
 
     
