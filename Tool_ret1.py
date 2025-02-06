@@ -221,11 +221,15 @@ else:
 
     st.plotly_chart(fig, use_container_width=True)
 
-# 📌 Section: Map for Selected Variable
+# 📌 Reduce space between dropdown and map
 st.subheader("🌍 Global View: Select Variable to Display on the Map")
 
-# 🎯 Dropdown to Choose a Variable
-selected_map_var = st.selectbox("Choose a variable to visualize", variables)
+col1, col2, col3 = st.columns([1, 6, 1])  # ✅ Center align dropdown, reduce space
+with col2:
+    selected_map_var = st.selectbox("Choose a variable to visualize", variables, key="map_variable")
+
+st.markdown("<style>div[data-testid='stSelectbox'] {margin-bottom: -35px;}</style>", unsafe_allow_html=True)  # ✅ Adjust spacing
+
 
 # ✅ Filtered Data for the Map (Only Countries Being Displayed)
 map_df = df_filtered[["Country", "Continent", selected_map_var]].copy()
