@@ -58,8 +58,6 @@ continent_mapping = {
 
 # 🔥 Assign Continent
 data["Continent"] = data["Country"].map(continent_mapping)
-if data["Continent"].isnull().any():
-    st.warning("Some countries were not mapped to a continent. Check country names for inconsistencies.")
 
 # 📊 Variables
 variables = [
@@ -67,39 +65,41 @@ variables = [
     "English Proficiency", "Openness", "Natural Scenery", "Natural Disaster"
 ]
 
-# 🚀 Normalize Data (0-100)
+# 🚀 Normalize & Rank Data
 def normalize_and_rank(df):
     for var in variables:
         if var in df.columns:
             df[var] = pd.to_numeric(df[var], errors="coerce")
-            min_val, max_val = df[var].min(), df[var].max()
+            
+            # Normalize 0-100
+            df[var] = df[var].rank(pct=True) * 100  
+            
+            # Reverse scale for "lower is better" variables
+            if var in ["Pollution", "Openness", "Natural Scenery", "Natural Disaster"]:
+                df[var] = 100 - df[var]
 
-            if var in ["Pollution", "Openness", "Natural Scenery"]:
-                df[var] = ((max_val - df[var]) / (max_val - min_val)) * 100  
-            else:
-                df[var] = ((df[var] - min_val) / (max_val - min_val)) * 100  
-
-            df[f"{var}_Category"] = pd.qcut(df[var].rank(method="min"), q=5, labels=[5, 4, 3, 2, 1])
+            # Rank Categories (5 = Worst, 1 = Best)
+            df[f"{var}_Category"] = pd.qcut(df[var], q=5, labels=[5, 4, 3, 2, 1])
     
     return df
 
 data = normalize_and_rank(data)
 
-# 🛠️ Sidebar
+# 🛠️ Sidebar Filters
 st.sidebar.subheader("Select Variables for Retirement Suitability")
 sliders = {var: st.sidebar.slider(var, 1, 5, 5) for var in variables}
 
 # 🎯 Apply Filters
 df_filtered = data.copy()
 for var in variables:
-    df_filtered = df_filtered[df_filtered[f"{var}_Category"].astype(int) <= sliders[var]]
+    df_filtered = df_filtered[df_filtered[f"{var}_Category"].fillna(5).astype(int) <= sliders[var]]
 
 # 📌 Multi-Select Continent Filter
 selected_continents = st.sidebar.multiselect("Select Continents", df_filtered["Continent"].unique(), df_filtered["Continent"].unique())
 df_filtered = df_filtered[df_filtered["Continent"].isin(selected_continents)]
 
 # 🏆 Compute Suitability Score
-df_filtered["Retirement Suitability"] = df_filtered[variables].mean(axis=1)
+df_filtered["Retirement Suitability"] = df_filtered[variables].mean(axis=1, skipna=True)
 
 # 📈 Plot
 if df_filtered.empty:
@@ -112,7 +112,6 @@ else:
         template="plotly_dark"
     )
     st.plotly_chart(fig, use_container_width=True)
-
 
 
 
