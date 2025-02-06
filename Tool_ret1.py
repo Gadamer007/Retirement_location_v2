@@ -265,12 +265,8 @@ fig_map.update_layout(
     coloraxis_colorbar=dict(title="Score"),  # ✅ Simplify legend to just "Score"
 )
 
-# 🎯 Display the Map
-# ✅ Ensure the map doesn't overlap with other elements
-st.markdown("<div style='margin-top: -40px;'></div>", unsafe_allow_html=True)  # Move map closer to dropdown
-# ✅ Reduce top margin before rendering the map
-st.markdown("<div style='margin-top: -180px;'></div>", unsafe_allow_html=True)  
-st.plotly_chart(fig_map, use_container_width=True)
+# 🎯 Display the Map 
+st.plotly_chart(fig_map, use_container_width=True, config={"scrollZoom": False, "displayModeBar": True, "displaylogo": False})
 
 
 
