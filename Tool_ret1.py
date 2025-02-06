@@ -14,7 +14,7 @@ st.markdown("""
 
     /* Reduce font size for checkboxes (variable labels) */
     [data-testid="stSidebar"] label {
-        font-size: 11px !important;  /* Smaller text */
+        font-size: 10px !important;  /* Smaller text */
         font-weight: 500 !important; /* Keep labels readable */
         margin-bottom: -10px !important; /* Reduce space between checkbox and slider */
     }
