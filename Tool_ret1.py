@@ -69,8 +69,14 @@ for var in selected_vars:
 df_filtered["Retirement Suitability"] = df_filtered[selected_vars].mean(axis=1)
 
 # 🔹 Continent Filter
-selected_continents = st.multiselect("Select Continents", df_filtered["Continent"].unique(), df_filtered["Continent"].unique())
-df_filtered = df_filtered[df_filtered["Continent"].isin(selected_continents)]
+if "Continent" in df_filtered.columns:
+    selected_continents = st.multiselect(
+        "Select Continents", df_filtered["Continent"].dropna().unique(), df_filtered["Continent"].dropna().unique()
+    )
+    df_filtered = df_filtered[df_filtered["Continent"].isin(selected_continents)]
+else:
+    st.warning("Continent column is missing from data. Ensure dataset is loaded correctly.")
+
 
 # 🔹 Scatter Plot
 fig = px.scatter(
