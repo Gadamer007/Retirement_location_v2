@@ -145,10 +145,11 @@ else:
     }
     
     # ➕ Manually add selected variables without conflicting with the DataFrame
+    # Fix: Ensure all variables exist in df_filtered before adding to hover_data
     for var in variables:
         if var in df_filtered.columns:
-            df_filtered[var] = pd.to_numeric(df_filtered[var], errors="coerce").round(2)  # ✅ Force numeric type safely
-            hover_data[var] = df_filtered[var].apply(lambda x: f"{x:.2f}" if pd.notna(x) else "NA")  # ✅ Ensure string conversion only on `hover_data`
+            df_filtered[var] = pd.to_numeric(df_filtered[var], errors="coerce").round(2)  # ✅ Ensure numeric type
+            hover_data[f"{var} (0-100)"] = df_filtered[var].apply(lambda x: f"{x:.2f}" if pd.notna(x) else "NA")  # ✅ Rename variable in hover_data to prevent conflicts
 
 
     
@@ -165,8 +166,9 @@ else:
             "Retirement Suitability": "Retirement Suitability (0 - 100)"
         },
         template="plotly_dark",
-        hover_data=hover_data  # ✅ NEW: Fixes the duplication issue
+        hover_data=hover_data  # ✅ Use corrected hover_data
     )
+
 
 
     
