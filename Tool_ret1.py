@@ -133,12 +133,20 @@ def normalize_and_categorize(df, variables):
                     df[var] = (df[var] - min_val) / (max_val - min_val) * 100
             
             # Reverse Pollution normally (low is good, high is bad)
+            # Reverse Pollution so that lower values (clean air) = better
             if var == "Pollution":
-                df[var] = 100 - df[var]  # Keep existing transformation for Pollution
+                min_pollution = df[var].min()
+                max_pollution = df[var].max()
+                
+                df[var] = ((max_pollution - df[var]) / (max_pollution - min_pollution)) * 100  # Cleaner air = higher score
+
             
             # Reverse Natural Disaster to ensure "safer = better"
             if var == "Natural Disaster":
-                df[var] = ((df[var].max() - df[var]) / (df[var].max() - df[var].min())) * 100  # Ensure safest = 100, worst = 0
+                df[var] = df[var].rank(pct=True) * 100  # Convert rank to 0-100 percentile-based scaling (safest = 100)
+                
+                threshold = np.percentile(df[var].dropna(), (6 - max_category) * 20)  # Get top 20%, 40%, etc.
+                df_filtered = df_filtered[df_filtered[var] >= threshold]  # Keep top safest countries
 
             
             try:
@@ -243,10 +251,12 @@ df_filtered = data.copy()
 for var in selected_vars:
     max_category = sliders[var]  # Slider value (1-5)
 
-    if var in ["Openness", "Natural Scenery", "Natural Disaster"]:
-        # Get percentile-based filtering to ensure correct distribution
-        threshold = np.percentile(df_filtered[var].dropna(), (6 - max_category) * 20)  
+    if var in ["Openness", "Natural Scenery"]:
+        df[var] = df[var].rank(pct=True) * 100  # Convert rank to 0-100 percentile-based scaling
+        
+        threshold = np.percentile(df[var].dropna(), (6 - max_category) * 20)  # Get top 20%, 40%, etc.
         df_filtered = df_filtered[df_filtered[var] >= threshold]  # Keep countries above threshold
+
     else:
         category_col = f"{var}_Category"
         df_filtered = df_filtered[df_filtered[category_col].astype(int) <= max_category]
