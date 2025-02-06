@@ -115,7 +115,11 @@ for i, var in enumerate(variables):
 
 # 🎯 Apply Filters
 for var in selected_vars:
-    df_filtered = df_filtered[df_filtered[f"{var}_Category"].fillna(5).astype(int) <= sliders[var]]
+    df_filtered = df_filtered[
+        (df_filtered[f"{var}_Category"].fillna(1).astype(int) <= sliders[var])  # ✅ Keep NAs
+        | (df_filtered[f"{var}_Category"].isna())  # ✅ Allow missing values to pass through
+    ]
+
 
 # 🏆 Compute Suitability Score
 df_filtered["Retirement Suitability"] = df_filtered[selected_vars].mean(axis=1, skipna=True)
