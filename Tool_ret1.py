@@ -48,7 +48,8 @@ def normalize_and_rank(df):
                 df[f"{var}_Category"] = pd.cut(df[var], bins=5, labels=[5, 4, 3, 2, 1], include_lowest=True)
 
             # 🔥 Fix NaN issue before converting to int
-            df[f"{var}_Category"] = df[f"{var}_Category"].astype("category").cat.add_categories(5).fillna(5).astype(int)
+            df[f"{var}_Category"] = df[f"{var}_Category"].astype(float).fillna(5).astype(int)
+
 
     return df
 
