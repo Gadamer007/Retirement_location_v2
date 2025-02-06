@@ -125,19 +125,25 @@ if df_filtered.empty:
 else:
     # 📌 Define hover information (Ensures all 9 variables appear with NA for missing)
     # 🔧 Fix missing values (Convert NaN to "NA" explicitly before passing to hover data)
-    df_filtered = df_filtered.fillna("NA")
+    # 🔧 Convert numeric columns to float (ensures fillna("NA") doesn't cause TypeError)
+    for col in df_filtered.columns:
+        if df_filtered[col].dtype == "object":  # Apply only to non-numeric columns
+            df_filtered[col] = df_filtered[col].fillna("NA")
+        else:
+            df_filtered[col] = df_filtered[col].astype(float).round(2)  # ✅ Round decimals to 2
+
     
-    # 📌 Define hover information (Ensures all 9 variables appear with "NA" for missing)
+    # 📌 Ensure hover data correctly displays "NA" when values are missing
     hover_data = {
         "Continent": True,
         "Country": True,
         "Retirement Suitability": ':.2f',
         "Cost of Living": ':.2f',
     }
-
-# ➕ Add all 9 selected variables (round to 2 decimals or show "NA" if missing)
-for var in variables:
-    hover_data[var] = ':.2f' if var in df_filtered.columns else True  # ✅ Rounds to 2 decimals
+    
+    # ➕ Add all 9 variables, ensuring they are rounded (or "NA" if missing)
+    for var in variables:
+        hover_data[var] = df_filtered[var].apply(lambda x: f"{x:.2f}" if pd.notna(x) else "NA")
 
     
     # 📈 Updated Scatter Plot
