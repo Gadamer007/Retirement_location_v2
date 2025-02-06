@@ -5,32 +5,6 @@ import numpy as np
 import requests
 from io import BytesIO
 
-# 🔹 Streamlit UI Customization
-st.markdown("""
-    <style>
-    /* Increase Sidebar Width */
-    [data-testid="stSidebar"] {
-        min-width: 360px !important;
-        max-width: 360px !important;
-    }
-    /* Reduce font size for checkboxes (variable labels) */
-    [data-testid="stSidebar"] label {
-        font-size: 11px !important;
-        font-weight: 500 !important;
-        margin-bottom: -10px !important;
-        white-space: nowrap !important;
-    }
-    /* Reduce space between checkbox and slider */
-    [data-testid="stSidebar"] .st-bb {
-        margin-bottom: -15px !important;
-    }
-    /* Reduce spacing between sliders */
-    [data-testid="stSidebar"] .st-br {
-        margin-bottom: 10px !important;
-    }
-    </style>
-    """, unsafe_allow_html=True)
-
 # 🔹 Load Dataset
 @st.cache_data
 def load_data():
@@ -43,35 +17,6 @@ def load_data():
 # Load the data
 data = load_data()
 data['Country'] = data['Country'].str.strip().str.title()
-
-# 🔹 Define country-to-continent mapping
-continent_mapping = {
-    'United States': 'America', 'Canada': 'America', 'Mexico': 'America', 'Brazil': 'America',
-    'Argentina': 'America', 'Chile': 'America', 'Colombia': 'America', 'Peru': 'America', 'Uruguay': 'America',
-    'Costa Rica': 'America', 'Panama': 'America', 'Trinidad And Tobago': 'America', 'Puerto Rico': 'America',
-    'Dominican Republic': 'America', 'Paraguay': 'America', 'Ecuador': 'America', 'Venezuela': 'America',
-    'South Africa': 'Africa', 'Egypt': 'Africa', 'Nigeria': 'Africa', 'Kenya': 'Africa', 'Morocco': 'Africa',
-    'Mauritius': 'Africa', 'Tunisia': 'Africa', 'Ghana': 'Africa', 'Uganda': 'Africa', 'Algeria': 'Africa',
-    'Libya': 'Africa', 'Zimbabwe': 'Africa', 'Iceland': 'Europe', 'Hong Kong (China)': 'Asia',
-    'China': 'Asia', 'Japan': 'Asia', 'India': 'Asia', 'South Korea': 'Asia', 'Thailand': 'Asia',
-    'Singapore': 'Asia', 'Malaysia': 'Asia', 'Israel': 'Asia', 'Taiwan': 'Asia', 'Jordan': 'Asia',
-    'Kazakhstan': 'Asia', 'Lebanon': 'Asia', 'Armenia': 'Asia', 'Iraq': 'Asia', 'Uzbekistan': 'Asia',
-    'Vietnam': 'Asia', 'Philippines': 'Asia', 'Kyrgyzstan': 'Asia', 'Bangladesh': 'Asia', 'Iran': 'Asia',
-    'Nepal': 'Asia', 'Sri Lanka': 'Asia', 'Pakistan': 'Asia', 'Kuwait': 'Asia', 'Turkey': 'Asia',
-    'Indonesia': 'Asia', 'United Arab Emirates': 'Asia', 'Saudi Arabia': 'Asia', 'Bahrain': 'Asia',
-    'Qatar': 'Asia', 'Oman': 'Asia', 'Azerbaijan': 'Asia',
-    'Germany': 'Europe', 'France': 'Europe', 'United Kingdom': 'Europe', 'Italy': 'Europe', 'Spain': 'Europe',
-    'Netherlands': 'Europe', 'Sweden': 'Europe', 'Denmark': 'Europe', 'Norway': 'Europe', 'Ireland': 'Europe',
-    'Finland': 'Europe', 'Belgium': 'Europe', 'Austria': 'Europe', 'Switzerland': 'Europe', 'Luxembourg': 'Europe',
-    'Czech Republic': 'Europe', 'Slovenia': 'Europe', 'Estonia': 'Europe', 'Poland': 'Europe', 'Malta': 'Europe',
-    'Croatia': 'Europe', 'Lithuania': 'Europe', 'Slovakia': 'Europe', 'Latvia': 'Europe', 'Portugal': 'Europe',
-    'Bulgaria': 'Europe', 'Hungary': 'Europe', 'Romania': 'Europe', 'Greece': 'Europe', 'Montenegro': 'Europe',
-    'Serbia': 'Europe', 'Bosnia And Herzegovina': 'Europe', 'North Macedonia': 'Europe', 'Albania': 'Europe',
-    'Moldova': 'Europe', 'Belarus': 'Europe', 'Georgia': 'Europe', 'Ukraine': 'Europe', 'Russia': 'Europe',
-    'Cyprus': 'Europe', 'Kosovo (Disputed Territory)': 'Europe', 'Australia': 'Oceania', 'New Zealand': 'Oceania'
-}
-
-data['Continent'] = data['Country'].map(continent_mapping)
 
 # 🔹 Define Variables
 variables = [
@@ -97,7 +42,14 @@ def normalize_and_rank(df):
                 df[var] = 100 - df[var]
 
             # Rank-normalize into 5 bins (20% each)
-            df[f"{var}_Category"] = pd.qcut(df[var], q=5, labels=[5, 4, 3, 2, 1], duplicates="drop")
+            try:
+                df[f"{var}_Category"] = pd.qcut(df[var], q=5, labels=[5, 4, 3, 2, 1], duplicates="drop")
+            except ValueError:
+                df[f"{var}_Category"] = pd.cut(df[var], bins=5, labels=[5, 4, 3, 2, 1], include_lowest=True)
+
+            # 🔥 Fix NaN issue before converting to int
+            df[f"{var}_Category"] = df[f"{var}_Category"].astype("category").cat.add_categories(5).fillna(5).astype(int)
+
     return df
 
 data = normalize_and_rank(data)
@@ -110,7 +62,7 @@ sliders = {var: st.sidebar.slider(var, 1, 5, 5) for var in selected_vars}
 # 🔹 Filter Data by Slider Selections
 df_filtered = data.copy()
 for var in selected_vars:
-    df_filtered = df_filtered[df_filtered[f"{var}_Category"].astype(int) <= sliders[var]]
+    df_filtered = df_filtered[df_filtered[f"{var}_Category"] <= sliders[var]]
 
 # 🔹 Compute Suitability Score
 df_filtered["Retirement Suitability"] = df_filtered[selected_vars].mean(axis=1)
@@ -128,6 +80,7 @@ fig = px.scatter(
 )
 
 st.plotly_chart(fig, use_container_width=True)
+
 
 
 
