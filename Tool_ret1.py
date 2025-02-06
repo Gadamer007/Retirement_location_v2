@@ -266,10 +266,10 @@ with map_container:
         xanchor="center"
     ),
     coloraxis_colorbar=dict(
-        title="Score", 
-        orientation="h",  # ✅ Horizontal legend
-        x=0.5,            # ✅ Center it below the map
-        y=-0.3,           # ✅ Move it lower below the map
+        title="Score",
+        orientation="h",
+        x=0.5,
+        y=-0.25,  # ✅ Move the label up slightly (was -0.3)
         xanchor="center",
         yanchor="bottom"
     ),
