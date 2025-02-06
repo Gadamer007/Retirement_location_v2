@@ -122,16 +122,31 @@ def normalize_and_categorize(df, variables):
                 df[var] = ((df[var].max() - df[var]) / (df[var].max() - df[var].min())) * 100  # Convert rank to 0-100 scale (1 = 100, worst = 0)
             
                 # Ensure we have at least 5 unique values before applying qcut()
-                if df[var].nunique() >= 5:
-                    df[f"{var}_Category"] = pd.qcut(
-                        df[var].rank(method='min', ascending=False, na_option='bottom'),  
-                        q=5, labels=[5, 4, 3, 2, 1], duplicates="drop"
-                    )
+                unique_values = df[var].nunique()
+                
+                if unique_values >= 5:
+                    try:
+                        df[f"{var}_Category"] = pd.qcut(
+                            df[var].rank(method='min', ascending=False, na_option='bottom'),
+                            q=min(unique_values, 5),  # Ensure we do not request more bins than unique values
+                            labels=[5, 4, 3, 2, 1][:min(unique_values, 5)],  # Adjust labels dynamically
+                            duplicates="drop"
+                        )
+                    except ValueError:
+                        df[f"{var}_Category"] = pd.cut(
+                            df[var].rank(method='min', ascending=False, na_option='bottom'),
+                            bins=min(unique_values, 5), 
+                            labels=[5, 4, 3, 2, 1][:min(unique_values, 5)], 
+                            include_lowest=True
+                        )
                 else:
                     df[f"{var}_Category"] = pd.cut(
                         df[var].rank(method='min', ascending=False, na_option='bottom'),
-                        bins=5, labels=[5, 4, 3, 2, 1], include_lowest=True
+                        bins=unique_values,  # Use the number of unique values as bins
+                        labels=list(range(unique_values, 0, -1)),  # Dynamically assign labels
+                        include_lowest=True
                     )
+
 
 
             
