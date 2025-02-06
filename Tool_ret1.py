@@ -98,8 +98,25 @@ exclude_incomplete = st.checkbox("Exclude countries with incomplete data (more t
 if exclude_incomplete:
     df_filtered = df_filtered[df_filtered.isna().sum(axis=1) <= 2]
 
+# 🛠️ Sidebar Filters (Restored Sliders)
+st.sidebar.subheader("Select Variables for Retirement Suitability")
+sliders = {}
+selected_vars = []
+
+cols = st.sidebar.columns(2)  
+for i, var in enumerate(variables):
+    with cols[i % 2]:  
+        checked = st.checkbox(f"**{var}**", value=True, key=f"check_{var}")
+        if checked:
+            sliders[var] = st.slider("", 1, 5, 5, key=f"slider_{var}")
+            selected_vars.append(var)
+
+# 🎯 Apply Filters
+for var in selected_vars:
+    df_filtered = df_filtered[df_filtered[f"{var}_Category"].fillna(5).astype(int) <= sliders[var]]
+
 # 🏆 Compute Suitability Score
-df_filtered["Retirement Suitability"] = df_filtered[variables].mean(axis=1, skipna=True)
+df_filtered["Retirement Suitability"] = df_filtered[selected_vars].mean(axis=1, skipna=True)
 
 # 📈 Plot
 if df_filtered.empty:
@@ -112,10 +129,10 @@ else:
         template="plotly_dark"
     )
     
-    # ✅ Increase bubble size and move text **over** bubbles
-    fig.update_traces(marker=dict(size=12), textposition="middle center")
+    # ✅ Bubble size reduction and text over bubbles
+    fig.update_traces(marker=dict(size=10), textposition="middle center")
     
-    # ✅ Apply dark background and gridline styling
+    # ✅ Dark background and gridline styling
     fig.update_layout(
         plot_bgcolor="black",
         paper_bgcolor="black",
