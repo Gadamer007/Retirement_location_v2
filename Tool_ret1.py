@@ -127,7 +127,8 @@ def normalize_and_categorize(df, variables):
 
             # Natural Disaster: Inverted (safer = better)
             if var == "Natural Disaster":
-                df[var] = df[var].rank(method="min", ascending=False, pct=True) * 100  # Convert rank to percentile (safest = 100, worst = 0)
+                df[var] = ((df[var].max() - df[var]) / (df[var].max() - df[var].min())) * 100  # Ensure safest = 100, worst = 0
+
 
 
             # Categorize into 5 groups for filtering
@@ -193,20 +194,22 @@ for var in selected_vars:
 
     if var in ["Openness", "Natural Scenery", "Natural Disaster"]:
         try:
-            df_filtered[f"{var}_Category"] = pd.qcut(df_filtered[var], q=5, labels=[1, 2, 3, 4, 5], duplicates="drop")
+            df_filtered[f"{var}_Category"] = pd.qcut(df_filtered[var], q=5, labels=[5, 4, 3, 2, 1], duplicates="drop")  
+            # 🔥 Reversed labels: "5" is worst (most dangerous), "1" is safest (least risk)
         except ValueError:
-            # 🔥 If qcut fails (not enough unique values), use pd.cut as fallback
-            df_filtered[f"{var}_Category"] = pd.cut(df_filtered[var], bins=5, labels=[1, 2, 3, 4, 5], include_lowest=True)
-    
+            df_filtered[f"{var}_Category"] = pd.cut(df_filtered[var], bins=5, labels=[5, 4, 3, 2, 1], include_lowest=True)
+
         # 🔥 Convert to numeric to avoid NaN casting issues
         df_filtered[f"{var}_Category"] = pd.to_numeric(df_filtered[f"{var}_Category"], errors="coerce").fillna(5).astype(int)
-    
+
         # 🔥 Apply the slider filter
-        df_filtered = df_filtered[df_filtered[f"{var}_Category"] <= max_category]
+        df_filtered = df_filtered[df_filtered[f"{var}_Category"] >= (6 - max_category)]  
+        # ✅ Reverse filter: Keeps SAFER countries when slider moves left
 
     else:
         category_col = f"{var}_Category"
         df_filtered = df_filtered[df_filtered[category_col].astype(int) <= max_category]
+
 
 
 
