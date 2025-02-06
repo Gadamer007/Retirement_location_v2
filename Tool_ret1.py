@@ -63,8 +63,10 @@ data["Continent"] = data["Country"].map(continent_mapping)
 # 📊 Variables
 variables = [
     "Safety", "Healthcare", "Political Stability", "Pollution", "Climate", 
-    "English Proficiency", "Openness", "Natural Scenery", "Natural Disaster"
+    "English Proficiency", "Openness", "Natural Scenery", "Natural Disaster",
+    "Cost of Living"  # ✅ NEW: Added Cost of Living as an available variable
 ]
+
 
 # 🚀 Normalize & Rank Data
 def normalize_and_rank(df):
