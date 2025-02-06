@@ -144,9 +144,15 @@ else:
             xanchor="center"  # ✅ Ensure title stays centered
         ),
 
+        xaxis=dict(
+            showgrid=True,  # ✅ Enables vertical grid lines
+            gridcolor="rgba(255, 255, 255, 0.3)",  # ✅ Matches horizontal grid color
+            linecolor="white",
+            tickfont=dict(color="white")
+        ),
         yaxis=dict(
             showgrid=True,  # ✅ Ensures horizontal grid stays
-            gridcolor="rgba(255, 255, 255, 0.3)",  # ✅ Same color
+            gridcolor="rgba(255, 255, 255, 0.3)",  # ✅ Same color as x-axis
             linecolor="white",
             tickfont=dict(color="white")
         ),
