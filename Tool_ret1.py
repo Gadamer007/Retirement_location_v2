@@ -9,27 +9,33 @@ st.markdown("""
     <style>
     /* Adjust sidebar width */
     [data-testid="stSidebar"] {
-        width: 330px !important;  /* Slightly wider for better fit */
+        width: 330px !important;  /* Slightly wider */
     }
 
     /* Reduce font size for checkboxes (variable labels) */
     [data-testid="stSidebar"] label {
-        font-size: 12px !important;  /* Smaller text */
+        font-size: 11px !important;  /* Smaller text */
         font-weight: 500 !important; /* Keep labels readable */
-        margin-bottom: -8px !important; /* Reduce space between checkbox and slider */
+        margin-bottom: -10px !important; /* Reduce space between checkbox and slider */
     }
 
     /* Reduce space between checkbox and slider */
     [data-testid="stSidebar"] .st-bb {
-        margin-bottom: -12px !important; /* Brings slider closer to the label */
+        margin-bottom: -15px !important; /* Brings slider closer to the label */
     }
 
-    /* Increase spacing between sliders for clarity */
+    /* Reduce spacing between sliders to ensure proper alignment */
     [data-testid="stSidebar"] .st-br {
-        margin-bottom: 14px !important; /* More spacing between sliders */
+        margin-bottom: 10px !important; /* More spacing between sliders */
+    }
+
+    /* Reduce font size for checkboxes to match slider labels */
+    [data-testid="stCheckbox"] {
+        font-size: 11px !important; /* Keep checkboxes consistent */
     }
     </style>
     """, unsafe_allow_html=True)
+
 
 
 
@@ -157,10 +163,11 @@ for label in variables:
     category_col = f"{label}_Category"
     if category_col in data.columns:
         with cols[i % 2]:  # Each variable + slider stays together
-            checked = st.checkbox(label, value=True, key=f"check_{label}")  # Keep checkboxes
+            checked = st.checkbox(f"**{label}**", value=True, key=f"check_{label}")  # Keep checkboxes, now bold
             if checked:  # Only show slider if checkbox is selected
+                st.markdown(f"<div style='height:2px'></div>", unsafe_allow_html=True)  # Small gap for alignment
                 sliders[label] = st.slider(
-                    "",  # Empty label to prevent repetition
+                    "",  # Empty label for slider
                     1, 5, 5, 
                     key=f"slider_{label}"
                 )
