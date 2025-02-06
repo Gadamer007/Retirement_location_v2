@@ -5,6 +5,20 @@ import numpy as np
 import requests
 from io import BytesIO
 
+st.markdown("""
+    <style>
+    /* Adjust sidebar width */
+    [data-testid="stSidebar"] {
+        width: 320px !important;  /* Increase width */
+    }
+    /* Reduce font size for better fit */
+    [data-testid="stSidebar"] * {
+        font-size: 14px !important;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
+
 # Load dataset
 @st.cache_data
 def load_data():
@@ -57,7 +71,7 @@ st.title("Best Countries for Early Retirement: Where to Retire Abroad?")
 
 # Sidebar Filters
 st.sidebar.subheader("Select Variables for Retirement Suitability")
-st.sidebar.markdown("<small>Move slider to the left to drop worst performing countries</small>", unsafe_allow_html=True)
+st.sidebar.markdown("<small>Move slider to the left to drop worst performing countries. For example, moving slider from 5 to 4 drops the bottom 20% performing countries</small>", unsafe_allow_html=True)
 selected_vars = []
 sliders = {}
 
@@ -129,7 +143,7 @@ for label in variables:
         with cols[i % 2]:  # Distribute elements across columns
             if st.checkbox(label, value=True, key=f"check_{label}"):
                 sliders[label] = st.slider(
-                    f"{label}", 
+                    "",  # <-- Empty string removes duplicate label inside slider
                     1, 5, 5, 
                     key=f"slider_{label}"
                 )
