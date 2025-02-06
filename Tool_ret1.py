@@ -236,11 +236,18 @@ if not selected_vars:
 # Start with full dataset
 df_filtered = data.copy()
 
-# Apply slider filters based on rank categories
+# Apply slider filters using actual 0-100 transformed values instead of category ranks
 for var in selected_vars:
-    max_category = sliders[var]
-    category_col = f"{var}_Category"
-    df_filtered = df_filtered[df_filtered[category_col].astype(int) <= max_category]
+    max_category = sliders[var]  # Slider value (1-5)
+
+    if var in ["Openness", "Natural Scenery"]:
+        # Convert slider value (1-5) to percentage threshold (20% per category)
+        threshold = (6 - max_category) * 20  # 5 -> 20%, 4 -> 40%, ..., 1 -> 100%
+        df_filtered = df_filtered[df_filtered[var] >= threshold]  # Keep countries above threshold
+    else:
+        category_col = f"{var}_Category"
+        df_filtered = df_filtered[df_filtered[category_col].astype(int) <= max_category]
+
 
 # Ensure selected variables exist and retrieve their actual values (0-100)
 real_value_vars = [var for var in selected_vars if var in data.columns]
