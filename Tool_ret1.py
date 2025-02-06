@@ -91,7 +91,7 @@ data = normalize_and_rank(data)
 st.title("Best Countries for Early Retirement: Where to Retire Abroad?")
 
 # Instructions Section
-with st.expander("📖 Instructions (Click to Expand/Collapse)"):
+with st.expander("📖  Instructions (Click to Expand/Collapse)"):
     st.write("""
     - This tool helps users identify the **best countries for retirement** abroad.  
     - Use the **left panel** to **select variables** that matter to you (e.g., uncheck Pollution if it’s not a factor).  
