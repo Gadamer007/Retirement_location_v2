@@ -63,8 +63,8 @@ data["Continent"] = data["Country"].map(continent_mapping)
 # 📊 Variables
 variables = [
     "Safety", "Healthcare", "Political Stability", "Pollution", "Climate", 
-    "English Proficiency", "Openness", "Natural Scenery", "Natural Disaster",
-    "Cost of Living"  # ✅ NEW: Added Cost of Living as an available variable
+    "English Proficiency", "Openness", "Natural Scenery", "Natural Disaster"
+    # ✅ NEW: Added Cost of Living as an available variable
 ]
 
 
