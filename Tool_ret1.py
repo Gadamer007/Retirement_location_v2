@@ -123,12 +123,27 @@ df_filtered["Retirement Suitability"] = df_filtered[selected_vars].mean(axis=1, 
 if df_filtered.empty:
     st.error("No data available to plot. Adjust filter settings.")
 else:
+    # 📌 Define hover information (Ensures all 9 variables appear with NA for missing)
+    hover_data = {
+        "Continent": True,  # 🌍 Show Continent
+        "Country": True,  # 🏳️ Show Country
+        "Retirement Suitability": ':.2f',  # 🏆 Show Retirement Score (rounded)
+        "Cost of Living": ':.2f',  # 💰 Show Cost of Living (rounded)
+    }
+    
+    # ➕ Add all 9 selected variables (round to 2 decimals or show NA if missing)
+    for var in variables:
+        hover_data[var] = ':.2f' if var in df_filtered.columns else True  # ✅ Rounds to 2 decimals
+    
+    # 📈 Updated Scatter Plot
     fig = px.scatter(
         df_filtered, x="Retirement Suitability", y="Cost of Living", text="Country",
         color="Continent", title="Retirement Suitability vs Cost of Living",
         labels={"Cost of Living": "Cost of Living (0 - 100)", "Retirement Suitability": "Retirement Suitability (0 - 100)"},
-        template="plotly_dark"
+        template="plotly_dark",
+        hover_data=hover_data  # ✅ NEW: Adds all 9 variables with rounding
     )
+
     
     # ✅ Bubble size reduction and text over bubbles
     fig.update_traces(marker=dict(size=8), textposition="top center")
