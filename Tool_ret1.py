@@ -91,19 +91,19 @@ data = normalize_and_rank(data)
 st.title("Best Countries for Early Retirement: Where to Retire Abroad?")
 
 # Instructions Section
-st.write("### Instructions for Using the Tool")
-instructions = """
-- This tool helps users identify the **best countries for retirement** abroad.  
-- Use the **left panel** to **select variables** that matter to you (e.g., uncheck Pollution if it’s not a factor).  
-- **Adjust sliders** to filter out low-performing countries for a given variable (e.g., setting Safety from 5 to 4 removes the least safe countries).  
-- The tool calculates a **Retirement Suitability Score** as the average of the selected factors.  
-- The **figure plots this score** against **cost of living (COL)** to highlight potential destinations.  
-- Use the **zoom tool** (top-right of the figure) to explore specific countries.  
-- Select/unselect **Continents** of interest.  
-- If desired, remove countries with **missing data** directly above the plot.
-- The **map below** shows how the Retirement Suitability factors are distributed geographically.   
-- The tool does not account for **Capital Gains Tax (CGT)**, but users should consider it (**[see here](https://taxsummaries.pwc.com/quick-charts/capital-gains-tax-cgt-rates)**).  
-"""
+with st.expander("📖 Instructions (Click to Expand/Collapse)"):
+    st.write("""
+    - This tool helps users identify the **best countries for retirement** abroad.  
+    - Use the **left panel** to **select variables** that matter to you (e.g., uncheck Pollution if it’s not a factor).  
+    - **Adjust sliders** to filter out low-performing countries for a given variable.  
+    - The tool calculates a **Retirement Suitability Score** as the average of the selected factors.  
+    - The **figure plots this score** against **cost of living (COL)** to highlight potential destinations.  
+    - Use the **zoom tool** (top-right of the figure) to explore specific countries.  
+    - Select/unselect **Continents** of interest.  
+    - If desired, remove countries with **missing data** directly above the plot.
+    - The **map below** shows how the Retirement Suitability factors are distributed geographically.   
+    - The tool does not account for **Capital Gains Tax (CGT)**, but users should consider it **[see here](https://taxsummaries.pwc.com/quick-charts/capital-gains-tax-cgt-rates)**.  
+    """)
 st.write(instructions)
 
 # 🌎 Continent Selection Directly Below Title
