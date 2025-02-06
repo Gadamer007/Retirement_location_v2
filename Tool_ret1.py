@@ -266,7 +266,7 @@ with map_container:
         xanchor="center"
     ),
     coloraxis_colorbar=dict(
-        title="Score",
+        title=None,
         orientation="h",
         x=0.5,
         y=-0.25,  # ✅ Move the label up slightly (was -0.3)
