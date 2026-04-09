@@ -149,13 +149,17 @@ if df_filtered.empty:
     st.error("No data available to plot. Adjust filter settings.")
 else:
     # 📌 Define hover information (Ensures all 9 variables appear with NA for missing)
-    # 🔧 Fix missing values (Convert NaN to "NA" explicitly before passing to hover data)
-    # 🔧 Convert numeric columns to float (ensures fillna("NA") doesn't cause TypeError)
+    # Round numeric columns only, leave string columns untouched
     for col in df_filtered.columns:
-        if df_filtered[col].dtype == "object":
+        if col in ["Country", "Continent"]:
+            continue
+        elif df_filtered[col].dtype == "object":
             df_filtered[col] = df_filtered[col].fillna("NA")
         else:
-            df_filtered[col] = pd.to_numeric(df_filtered[col], errors="coerce").round(2)
+            try:
+                df_filtered[col] = pd.to_numeric(df_filtered[col], errors="coerce").round(2)
+            except Exception:
+                pass
 
     
    
@@ -172,9 +176,8 @@ else:
     # Fix: Ensure all variables exist in df_filtered before adding to hover_data
     for var in variables:
         if var in df_filtered.columns:
-            df_filtered[var] = pd.to_numeric(df_filtered[var], errors="coerce").round(2)  # ✅ Ensure numeric type
-            hover_data[f"{var} (0-100)"] = df_filtered[var].apply(lambda x: f"{x:.2f}" if pd.notna(x) else "NA")  # ✅ Rename variable in hover_data to prevent conflicts
-
+            df_filtered[var] = pd.to_numeric(df_filtered[var], errors="coerce").round(2)
+            hover_data[var] = ":.2f"
 
     
     # 📈 Updated Scatter Plot
