@@ -152,10 +152,10 @@ else:
     # 🔧 Fix missing values (Convert NaN to "NA" explicitly before passing to hover data)
     # 🔧 Convert numeric columns to float (ensures fillna("NA") doesn't cause TypeError)
     for col in df_filtered.columns:
-        if df_filtered[col].dtype == "object":  # Apply only to non-numeric columns
+        if df_filtered[col].dtype == "object":
             df_filtered[col] = df_filtered[col].fillna("NA")
         else:
-            df_filtered[col] = df_filtered[col].astype(float).round(2)  # ✅ Round decimals to 2
+            df_filtered[col] = pd.to_numeric(df_filtered[col], errors="coerce").round(2)
 
     
    
